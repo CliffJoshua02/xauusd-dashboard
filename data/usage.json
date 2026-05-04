@@ -1,1 +1,23 @@
-{}
+{
+  "month": "2026-05",
+  "ninja": {
+    "count": 0,
+    "lastTs": 0
+  },
+  "gold": {
+    "count": 1,
+    "lastTs": 1777871982
+  },
+  "ff": {
+    "lastTs": 1777871982
+  },
+  "history": [
+    {
+      "ts": 1777871982,
+      "ninjaUsed": 0,
+      "goldUsed": 1,
+      "ninjaTot": 0,
+      "goldTot": 1
+    }
+  ]
+}
