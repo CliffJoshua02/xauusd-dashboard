@@ -296,25 +296,32 @@ textarea.fv{resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:12p
     </div>
   </div>
 
-  <!-- ══ MANUAL PULL MODAL ══ -->
+  <!-- ══ FORCE PULL MODAL ══ -->
   <div id="manual-pull-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:360px;max-width:90vw;position:relative">
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:28px;width:380px;max-width:90vw;position:relative">
+      <button onclick="closeManualPull()" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1">✕</button>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Force Pull</div>
-      <div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px" id="mp-title">Fetching live data…</div>
-      <div style="font-size:11px;color:var(--txt3);margin-bottom:16px;line-height:1.6" id="mp-desc">Calling APIs directly — no GitHub needed.</div>
-      <!-- Progress steps -->
-      <div id="mp-steps" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
-        <div class="mp-step" id="mp-s1" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)"><span style="width:16px;text-align:center">○</span> Fetching 1H candles</div>
-        <div class="mp-step" id="mp-s2" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)"><span style="width:16px;text-align:center">○</span> Fetching 15M candles</div>
-        <div class="mp-step" id="mp-s3" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)"><span style="width:16px;text-align:center">○</span> Fetching 1M candles</div>
-        <div class="mp-step" id="mp-s4" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)"><span style="width:16px;text-align:center">○</span> Fetching live spot price</div>
-        <div class="mp-step" id="mp-s5" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3)"><span style="width:16px;text-align:center">○</span> Running analysis &amp; auto-fill</div>
+      <div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px" id="mp-title">Force Pull</div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:18px;line-height:1.6" id="mp-desc">Pick an option:</div>
+      <div id="mp-steps" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+        <button onclick="triggerManualPull()" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--golda);border:1px solid var(--goldb);border-radius:var(--rsm);cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:20px">↗</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--gold2)">GitHub Actions — Full Pull</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:2px">Opens Actions tab → click Run workflow → all data loads in ~60s</div>
+          </div>
+        </button>
+        <button onclick="spotOnlyPull()" style="display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--bg4);border:1px solid var(--line);border-radius:var(--rsm);cursor:pointer;text-align:left;width:100%">
+          <span style="font-size:20px">⚡</span>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--txt2)">Spot Price Only — Instant</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:2px">Updates price, spread, high/low right now — no candles needed</div>
+          </div>
+        </button>
       </div>
-      <button onclick="closeManualPull()" id="mp-close-btn"
-        style="display:none;width:100%;padding:11px;font-size:13px;font-weight:600;background:var(--gold);color:var(--bg);border:none;border-radius:var(--rsm);cursor:pointer;font-family:'IBM Plex Sans',sans-serif">
-        ✓ Done — Close
-      </button>
-      <div id="mp-error" style="display:none;padding:9px 12px;border-radius:var(--rsm);font-size:11px;font-weight:600;background:var(--reda);border:1px solid var(--redb);color:var(--red);line-height:1.6;white-space:pre-line;margin-top:8px"></div>
+      <div id="mp-status" style="display:none;padding:9px 12px;border-radius:var(--rsm);font-size:12px;font-weight:600;margin-bottom:8px;line-height:1.6;white-space:pre-line"></div>
+      <div id="mp-error"  style="display:none;padding:9px 12px;border-radius:var(--rsm);font-size:11px;background:var(--reda);border:1px solid var(--redb);color:var(--red);margin-bottom:8px"></div>
+      <button onclick="closeManualPull()" id="mp-close-btn" style="display:none;width:100%;padding:11px;font-size:13px;font-weight:600;background:var(--gold);color:var(--bg);border:none;border-radius:var(--rsm);cursor:pointer;font-family:'IBM Plex Sans',sans-serif">✓ Done — Close</button>
     </div>
   </div>
 
@@ -883,26 +890,21 @@ function setApiStatus(state,txt){
    All live data comes from Force Pull button.
 ═══════════════════════════════════════════ */
 function startFeed() {
-  // Render immediately from whatever is in localStorage
-  // (populated by the last Force Pull)
   if (S.price) {
     renderPriceUI();
     setApiStatus('live', 'Last pull · ' + (S.lastFetch || '—'));
   } else {
     setApiStatus('', 'Press ⬇ Force Pull to load live data');
   }
-  if (S.candles15m && S.candles15m.length) {
-    runAndSaveAnalysis();
-  }
-  renderGauge();
-  renderVerdict();
-  renderNewsAlert();
-  syncSetupAutoFields();
-  syncCalcUI();
-  renderKeyLevels();
-  renderBiasAlignDisp();
-  renderNewsSetup();
-  renderNewsPage();
+  if (S.candles15m && S.candles15m.length) runAndSaveAnalysis();
+  renderGauge(); renderVerdict(); renderNewsAlert();
+  syncSetupAutoFields(); syncCalcUI(); renderKeyLevels();
+  renderBiasAlignDisp(); renderNewsSetup(); renderNewsPage();
+  // Also try reading data/candles.json in case GitHub Actions ran recently
+  fetch(CACHE_URL + '?v=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.spot && d.spot.price) loadFromCache(d); })
+    .catch(() => {});
 }
 
 /* ═══════════════════════════════════════════
@@ -1735,181 +1737,147 @@ function refreshAll(){ startFeed(); if(document.getElementById('pg-charts').clas
    Credentials hardcoded — password is the only gate.
 ═══════════════════════════════════════════ */
 /* ═══════════════════════════════════════════
-   FORCE PULL — fetches directly from APIs in
-   the browser. No GitHub Actions needed.
-   Same keys used by the backend script.
+   FORCE PULL — opens GitHub Actions in new tab.
+   After ~60s the workflow commits data/candles.json
+   and this page auto-reads it.
 ═══════════════════════════════════════════ */
-const FP_NINJA_KEY = '2DsPMr2hXj8NUWrRbT6VMas1T1J9kpUE9KSteDVc';
-const FP_GOLD_KEY  = 'goldapi-f9d7da3d75a0556d6ef2c31785d39547-io';
+const GH_OWNER = 'CliffJoshua02';
+const GH_REPO  = 'xauusd-dashboard';
+const CACHE_URL = './data/candles.json';
 
 function openManualPull() {
-  // Reset all steps to pending
-  [1,2,3,4,5].forEach(n => stepPending(n));
-  document.getElementById('mp-close-btn').style.display = 'none';
-  document.getElementById('mp-error').style.display     = 'none';
-  document.getElementById('mp-title').textContent = 'Fetching live data…';
-  document.getElementById('mp-desc').textContent  = 'Calling APIs directly — no GitHub needed.';
   document.getElementById('manual-pull-overlay').style.display = 'flex';
-  // Start immediately
-  forcePull();
+  document.getElementById('mp-status').style.display = 'none';
+  document.getElementById('mp-steps').style.display = 'block';
+  document.getElementById('mp-close-btn').style.display = 'none';
+  document.getElementById('mp-error').style.display = 'none';
+  document.getElementById('mp-title').textContent = 'Force Pull';
+  document.getElementById('mp-desc').textContent  = 'Two options — pick one:';
 }
 
 function closeManualPull() {
   document.getElementById('manual-pull-overlay').style.display = 'none';
 }
 
-function stepPending(n) {
-  const el = document.getElementById('mp-s' + n);
-  if (!el) return;
-  el.style.color = 'var(--txt3)';
-  el.querySelector('span').textContent = '○';
-}
-function stepActive(n) {
-  const el = document.getElementById('mp-s' + n);
-  if (!el) return;
-  el.style.color = 'var(--amber)';
-  el.querySelector('span').textContent = '…';
-}
-function stepDone(n) {
-  const el = document.getElementById('mp-s' + n);
-  if (!el) return;
-  el.style.color = 'var(--green)';
-  el.querySelector('span').textContent = '✓';
-}
-function stepFail(n, msg) {
-  const el = document.getElementById('mp-s' + n);
-  if (!el) return;
-  el.style.color = 'var(--amber)';
-  el.querySelector('span').textContent = '⚠';
-  if (msg) el.childNodes[1].textContent = ' ' + msg;
+function triggerManualPull() {
+  // Open GitHub Actions — click Run workflow there
+  window.open(`https://github.com/${GH_OWNER}/${GH_REPO}/actions/workflows/fetch.yml`, '_blank');
+  document.getElementById('mp-title').textContent = '⏳ Workflow triggered';
+  document.getElementById('mp-desc').textContent  = 'Come back here — page auto-updates in ~60 seconds.';
+  document.getElementById('mp-steps').style.display = 'none';
+  setMPStatus('✅ GitHub Actions opened.\n\nClick "Run workflow" → "Run workflow" (green button).\n\nThis page will auto-update when data arrives.', 'ok');
+  startPollingCache();
 }
 
-async function fpFetchCandles(interval, limit) {
-  const now   = Math.floor(Date.now() / 1000);
-  const secs  = interval === '1h' ? 3600 : interval === '15m' ? 900 : 60;
-  const start = now - secs * (limit + 5);
-  const url   = `https://api.api-ninjas.com/v1/commoditypricehistorical?name=gold&interval=${interval}&start=${start}&end=${now}`;
-  const r = await fetch(url, { headers: { 'X-Api-Key': FP_NINJA_KEY } });
-  if (!r.ok) throw new Error(`Ninja ${interval}: HTTP ${r.status}`);
-  const arr = await r.json();
-  if (!Array.isArray(arr)) throw new Error(`Ninja ${interval}: bad response`);
-  return arr.reverse().slice(-limit).map(c => ({
-    t: c.timestamp,
-    o: parseFloat(c.open),  h: parseFloat(c.high),
-    l: parseFloat(c.low),   c: parseFloat(c.close),
-  }));
-}
-
-async function fpFetchSpot() {
-  const r = await fetch('https://www.goldapi.io/api/XAU/USD', {
-    headers: { 'x-access-token': FP_GOLD_KEY, 'Content-Type': 'application/json' }
-  });
-  if (!r.ok) throw new Error(`GoldAPI: HTTP ${r.status}`);
-  const d   = await r.json();
-  const ask = parseFloat(d.ask || 0), bid = parseFloat(d.bid || 0);
-  return {
-    price:     parseFloat(d.price || d.ask || 0),
-    ask, bid,
-    high:      parseFloat(d.high_price  || 0),
-    low:       parseFloat(d.low_price   || 0),
-    open:      parseFloat(d.open_price  || 0),
-    change:    parseFloat(d.ch  || 0),
-    changePct: parseFloat(d.chp || 0),
-    spread:    +Math.max(0, ask - bid).toFixed(2) || 0.28,
-    fetchedAtET: nowET().toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET',
-    derivedFromCandles: false,
-  };
-}
-
-async function forcePull() {
-  let errors = [];
-
-  // Step 1: 1H candles
-  stepActive(1);
-  try {
-    const c1h = await fpFetchCandles('1h', 40);
-    S.candles1h = c1h;
-    stepDone(1);
-  } catch(e) { stepFail(1, '(using cached)'); errors.push(e.message); }
-
-  // Step 2: 15M candles
-  stepActive(2);
-  try {
-    const c15m = await fpFetchCandles('15m', 40);
-    S.candles15m = c15m;
-    stepDone(2);
-  } catch(e) { stepFail(2, '(using cached)'); errors.push(e.message); }
-
-  // Step 3: 1M candles
-  stepActive(3);
-  try {
-    const c1m = await fpFetchCandles('1m', 60);
-    S.candles1m = c1m;
-    stepDone(3);
-  } catch(e) { stepFail(3, '(using cached)'); errors.push(e.message); }
-
-  // Step 4: Spot price
-  stepActive(4);
-  try {
-    const spot = await fpFetchSpot();
-    prevPx      = S.price;
-    S.price     = +spot.price.toFixed(2);
-    S.high      = +spot.high.toFixed(2);
-    S.low       = +spot.low.toFixed(2);
-    S.open      = +spot.open.toFixed(2);
-    S.change    = +spot.change.toFixed(2);
-    S.changePct = +spot.changePct.toFixed(2);
-    S.spread    = +spot.spread.toFixed(2);
-    S.eq        = +((S.high + S.low) / 2).toFixed(2);
-    S.lastFetch = spot.fetchedAtET;
-    setApiStatus('live', 'Force pull · ' + spot.fetchedAtET);
-    stepDone(4);
-  } catch(e) {
-    // Derive from candles as fallback
-    if (S.candles1m.length) {
-      const last = S.candles1m[S.candles1m.length - 1];
-      S.price = last.c;
-      S.high  = Math.max(...S.candles1m.map(c => c.h));
-      S.low   = Math.min(...S.candles1m.map(c => c.l));
-      S.eq    = +((S.high + S.low) / 2).toFixed(2);
-    }
-    stepFail(4, '(derived from candles)');
-    errors.push(e.message);
-  }
-
-  // Step 5: Analysis + auto-fill
-  stepActive(5);
-  try {
-    persist();
-    renderPriceUI();
-    if (S.candles15m && S.candles15m.length) runAndSaveAnalysis();
-    renderGauge();
-    renderKeyLevels();
-    renderConditions();
-    renderVerdict();
-    renderNewsAlert();
-    renderPhaseSummary();
-    syncSetupAutoFields();
-    syncCalcUI();
-    renderBiasAlignDisp();
-    if (document.getElementById('pg-charts').classList.contains('act')) loadAllCharts();
-    stepDone(5);
-  } catch(e) {
-    stepFail(5);
-    errors.push(e.message);
-  }
-
-  // Done
-  document.getElementById('mp-title').textContent = errors.length === 0 ? '✅ All data updated!' : '⚠ Done with some warnings';
-  document.getElementById('mp-desc').textContent  = errors.length === 0
-    ? 'Dashboard, Setup, and Charts are now showing fresh data.'
-    : 'Most data updated. Some steps used cached data.';
+function startPollingCache() {
+  let polls = 0;
   document.getElementById('mp-close-btn').style.display = 'block';
+  const poll = setInterval(async () => {
+    polls++;
+    try {
+      const r = await fetch(CACHE_URL + '?v=' + Date.now());
+      if (!r.ok) throw new Error('not ready');
+      const d = await r.json();
+      if (d.spot && d.spot.price) {
+        loadFromCache(d);
+        setMPStatus(`✅ Fresh data loaded! (${polls * 10}s)\nPrice: ${d.spot.price} · Bias: ${d.bias?.h1||'—'} / ${d.bias?.m15||'—'}`, 'ok');
+        clearInterval(poll);
+      }
+    } catch(e) {
+      document.getElementById('mp-status').textContent =
+        `Waiting for workflow to finish… (${polls * 10}s)\nTip: check the Actions tab in GitHub to see progress.`;
+    }
+    if (polls >= 30) { // 5 min timeout
+      clearInterval(poll);
+      setMPStatus('Timed out waiting. Data may still arrive — refresh the page in a minute.', 'warn');
+    }
+  }, 10000);
+}
 
-  if (errors.length) {
-    const errEl = document.getElementById('mp-error');
-    errEl.style.display = 'block';
-    errEl.textContent   = errors.join('\n');
+function loadFromCache(d) {
+  if (!d) return;
+  const spot = d.spot;
+  if (spot && spot.price) {
+    prevPx = S.price;
+    S.price     = +spot.price.toFixed(2);
+    S.high      = +((spot.high || S.price)).toFixed(2);
+    S.low       = +((spot.low  || S.price)).toFixed(2);
+    S.open      = +((spot.open || S.price)).toFixed(2);
+    S.change    = +((spot.change    || 0)).toFixed(2);
+    S.changePct = +((spot.changePct || 0)).toFixed(2);
+    S.spread    = +((spot.spread    || 0.28)).toFixed(2);
+    S.eq        = +((S.high + S.low) / 2).toFixed(2);
+    S.lastFetch = spot.fetchedAtET || '—';
+  }
+  if (d.candles1h  && d.candles1h.length)  S.candles1h  = d.candles1h;
+  if (d.candles15m && d.candles15m.length) S.candles15m = d.candles15m;
+  if (d.candles1m  && d.candles1m.length)  S.candles1m  = d.candles1m;
+  if (d.bias) {
+    S.biasH1        = d.bias.h1  || S.biasH1;
+    S.biasM15       = d.bias.m15 || S.biasM15;
+    S.biasReason1h  = d.bias.h1Reason  || '';
+    S.biasReason15m = d.bias.m15Reason || '';
+  }
+  if (d.news && Array.isArray(d.news)) {
+    const manual = S.news.filter(n => !n.auto);
+    S.news = [...d.news.filter(n => n.auto), ...manual];
+  }
+  const meta = d.meta || {};
+  const nU = meta.ninja?.usage || 0, nL = meta.ninja?.limit || 2700;
+  const gU = meta.gold?.usage  || 0, gL = meta.gold?.limit  || 90;
+  setApiStatus('live', `${S.lastFetch} · N:${nU}/${nL} G:${gU}/${gL}`);
+  persist();
+  renderPriceUI(); renderGauge(); renderVerdict(); renderNewsAlert();
+  if (S.candles15m && S.candles15m.length) runAndSaveAnalysis();
+  syncSetupAutoFields(); syncCalcUI(); renderKeyLevels();
+  renderBiasAlignDisp(); renderNewsSetup(); renderNewsPage();
+  if (document.getElementById('pg-charts').classList.contains('act')) loadAllCharts();
+}
+
+function setMPStatus(msg, cls) {
+  const el = document.getElementById('mp-status');
+  const base = 'display:block;padding:9px 12px;border-radius:var(--rsm);font-size:12px;font-weight:600;margin-bottom:8px;line-height:1.6;white-space:pre-line;';
+  el.style.cssText = base + (
+    cls === 'ok'   ? 'background:var(--greena);border:1px solid var(--greenb);color:var(--green);' :
+    cls === 'warn' ? 'background:var(--ambera);border:1px solid var(--amberb);color:var(--amber);' :
+                     'background:var(--reda);border:1px solid var(--redb);color:var(--red);'
+  );
+  el.textContent = msg;
+}
+
+async function spotOnlyPull() {
+  document.getElementById('mp-steps').style.display = 'none';
+  document.getElementById('mp-title').textContent = '⏳ Fetching spot price…';
+  document.getElementById('mp-desc').textContent  = 'Calling GoldAPI directly…';
+  setMPStatus('Contacting GoldAPI.io…', 'warn');
+  try {
+    const r = await fetch('https://www.goldapi.io/api/XAU/USD', {
+      headers: { 'x-access-token': 'goldapi-f9d7da3d75a0556d6ef2c31785d39547-io', 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const ask = parseFloat(d.ask||0), bid = parseFloat(d.bid||0);
+    prevPx      = S.price;
+    S.price     = +parseFloat(d.price||d.ask||0).toFixed(2);
+    S.high      = +parseFloat(d.high_price||S.price).toFixed(2);
+    S.low       = +parseFloat(d.low_price||S.price).toFixed(2);
+    S.open      = +parseFloat(d.open_price||S.price).toFixed(2);
+    S.change    = +parseFloat(d.ch||0).toFixed(2);
+    S.changePct = +parseFloat(d.chp||0).toFixed(2);
+    S.spread    = +Math.max(0,ask-bid).toFixed(2)||0.28;
+    S.eq        = +((S.high+S.low)/2).toFixed(2);
+    S.lastFetch = new Date().toLocaleString('en-US',{timeZone:'America/New_York'})+' ET';
+    setApiStatus('live','Spot only · '+S.lastFetch);
+    persist();
+    renderPriceUI(); renderGauge(); renderVerdict(); syncSetupAutoFields(); syncCalcUI(); renderKeyLevels();
+    document.getElementById('mp-title').textContent = '✅ Spot price updated!';
+    document.getElementById('mp-desc').textContent  = `Price: ${S.price} · Spread: ${S.spread} · EQ: ${S.eq}`;
+    setMPStatus('Price updated. For candles and charts, use GitHub Actions Full Pull.', 'ok');
+    document.getElementById('mp-close-btn').style.display = 'block';
+  } catch(e) {
+    document.getElementById('mp-title').textContent = '❌ Failed';
+    setMPStatus('GoldAPI error: ' + e.message, 'err');
+    document.getElementById('mp-close-btn').style.display = 'block';
   }
 }
 
