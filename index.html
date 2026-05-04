@@ -522,8 +522,8 @@ textarea.fv{resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:12p
     <!-- ═══ SETUP PAGE ═══ -->
     <div class="page" id="pg-setup">
       <div id="setup-saved-bar" style="display:none;padding:9px 13px;background:var(--greena);border:1px solid var(--greenb);border-radius:var(--rsm);margin-bottom:12px;font-size:12px;font-weight:600;color:var(--green)">✓ Setup saved — Dashboard updated</div>
-      <div style="padding:9px 13px;background:var(--bluea);border:1px solid var(--blueb);border-radius:var(--rsm);margin-bottom:14px;font-size:12px;color:var(--blue)">
-        ℹ Blue fields are <strong>auto-filled from live price data and chart analysis</strong>. You only need to verify them and fill any that need adjustment. Then tap Save.
+      <div style="padding:9px 13px;background:var(--greena);border:1px solid var(--greenb);border-radius:var(--rsm);margin-bottom:14px;font-size:12px;color:var(--green)">
+        ✅ All fields are <strong>auto-filled automatically</strong> every time fresh data loads. You only need to set your 1H / 15M bias below, then optionally review and adjust any level you disagree with.
       </div>
       <div class="setup-grid">
         <div style="display:flex;flex-direction:column;gap:12px">
@@ -892,6 +892,13 @@ async function loadCachedData() {
     renderGauge();
     renderVerdict();
     renderNewsAlert();
+
+    // Auto-run analysis whenever fresh candle data arrives —
+    // this fills all Setup fields without the user doing anything
+    if (S.candles15m && S.candles15m.length) {
+      runAndSaveAnalysis();
+    }
+
     syncSetupAutoFields();
     syncCalcUI();
     renderKeyLevels();
@@ -1331,6 +1338,91 @@ async function loadAllCharts(){
 /* ═══════════════════════════════════════════
    TRADE ANALYSIS — auto entry/SL/TP
 ═══════════════════════════════════════════ */
+// ── AUTO-ANALYSIS + AUTO-SAVE ──────────────────────────────
+// Called every time fresh candle data arrives. Calculates all
+// levels, writes them to state, calls saveSetup silently.
+// User never needs to touch the Setup tab.
+function runAndSaveAnalysis() {
+  const candles = S.candles15m;
+  if (!candles || candles.length < 5) return;
+
+  const fvgs  = detectFVGs(candles);
+  const ifvgs = detectIFVG(candles, fvgs);
+  const obs   = detectOrderBlocks(candles);
+  const z     = detectZones(candles);
+  const price = S.price || candles[candles.length-1].c;
+  const hi    = S.high  || Math.max(...candles.map(c=>c.h));
+  const lo    = S.low   || Math.min(...candles.map(c=>c.l));
+  const eq    = S.eq    || (hi+lo)/2;
+
+  const last5     = candles.slice(-5);
+  const avgClose5 = last5.reduce((a,c)=>a+c.c,0)/5;
+  const bullish   = price > avgClose5;
+
+  // Zones — always fresh
+  S.dt = +z.demandTop.toFixed(2); S.db = +z.demandBot.toFixed(2);
+  S.sb = +z.supplyBot.toFixed(2); S.st = +z.supplyTop.toFixed(2);
+
+  // IFVG
+  const latestIF = ifvgs.length ? ifvgs[ifvgs.length-1] : null;
+  if (latestIF) S.ifvg = +((latestIF.top+latestIF.bot)/2).toFixed(2);
+
+  // OB
+  const latestOB = obs.length ? obs[obs.length-1] : null;
+  if (latestOB) S.ob = +((latestOB.top+latestOB.bot)/2).toFixed(2);
+
+  // Entry / SL / TP
+  let entry=0, sl=0, tp1=0, tp2=0, setupLabel='';
+  if (bullish) {
+    const ifvgE=ifvgs.filter(f=>f.bullish&&f.bot<price).pop();
+    const obE  =obs.filter(o=>o.bullish&&o.top<price).pop();
+    if(ifvgE){entry=+((ifvgE.top+ifvgE.bot)/2).toFixed(2);setupLabel='Bullish IFVG re-test';}
+    else if(obE){entry=+((obE.top+obE.bot)/2).toFixed(2);setupLabel='Bullish Order Block';}
+    else{entry=+z.demandTop.toFixed(2);setupLabel='Demand Zone bounce';}
+    sl =+(entry-Math.max(8,(entry-lo)*0.3)).toFixed(2);
+    tp1=+(entry+(eq-entry)*1.5).toFixed(2);
+    tp2=+(hi-2).toFixed(2);
+  } else {
+    const ifvgE=ifvgs.filter(f=>!f.bullish&&f.top>price).pop();
+    const obE  =obs.filter(o=>!o.bullish&&o.bot>price).pop();
+    if(ifvgE){entry=+((ifvgE.top+ifvgE.bot)/2).toFixed(2);setupLabel='Bearish IFVG re-test';}
+    else if(obE){entry=+((obE.top+obE.bot)/2).toFixed(2);setupLabel='Bearish Order Block';}
+    else{entry=+z.supplyBot.toFixed(2);setupLabel='Supply Zone rejection';}
+    sl =+(entry+Math.max(8,(hi-entry)*0.3)).toFixed(2);
+    tp1=+(entry-(entry-eq)*1.5).toFixed(2);
+    tp2=+(lo+2).toFixed(2);
+  }
+  S.entry=entry; S.sl=sl; S.tp1=tp1; S.tp2=tp2;
+
+  // Auto-save so Dashboard verdict sees a complete setup
+  S.setupDate = TODAY;
+  persist();
+
+  // Refresh all UI that depends on these levels
+  syncSetupAutoFields();
+  syncCalcUI();
+  renderKeyLevels();
+  renderGauge();
+  renderVerdict();
+  renderPhaseSummary();
+
+  // Update analysis bar
+  const slD=Math.abs(entry-sl);
+  const rr1=slD?+(Math.abs(tp1-entry)/slD).toFixed(2):0;
+  const rr2=slD?+(Math.abs(tp2-entry)/slD).toFixed(2):0;
+  const se=(id,txt,cls)=>{const e=document.getElementById(id);if(!e)return;e.textContent=txt;if(cls)e.className=cls;};
+  se('ab-setup',   setupLabel,             'ab-val '+(bullish?'g':'r'));
+  se('ab-setup-s', bullish?'Bullish bias':'Bearish bias');
+  se('ab-entry',   entry.toFixed(2),       'ab-val a');
+  se('ab-entry-s', bullish?'Long entry':'Short entry');
+  se('ab-levels',  `SL ${sl.toFixed(2)} / TP1 ${tp1.toFixed(2)}`);
+  se('ab-levels-s',`TP2 ${tp2.toFixed(2)}`);
+  se('ab-rr',      rr1?'1:'+rr1:'—',      'ab-val '+(rr1>=1.5?'g':rr1>=1?'a':'r'));
+  se('ab-rr-s',    rr1>=1.5?'✅ Meets minimum':'⚠ Below 1:1.5');
+
+  showToast('✓ Setup auto-filled from latest data');
+}
+
 function runTradeAnalysis(){
   const candles=S.candles15m;
   if(!candles||candles.length<5){ showChartLoading('tp',false); return; }
@@ -1381,11 +1473,13 @@ function runTradeAnalysis(){
     tp2=+(lo+2).toFixed(2);
   }
 
-  // Save to state
-  if(!S.entry) S.entry=entry;
-  if(!S.sl)    S.sl=sl;
-  if(!S.tp1)   S.tp1=tp1;
-  if(!S.tp2)   S.tp2=tp2;
+  // Always write fresh values — never use stale yesterday data
+  S.entry=entry; S.sl=sl; S.tp1=tp1; S.tp2=tp2;
+  // Also refresh zones and IFVG from latest candles
+  S.dt=+z.demandTop.toFixed(2); S.db=+z.demandBot.toFixed(2);
+  S.sb=+z.supplyBot.toFixed(2); S.st=+z.supplyTop.toFixed(2);
+  const latestIFVG2=ifvgs.length?ifvgs[ifvgs.length-1]:null;
+  if(latestIFVG2) S.ifvg=+((latestIFVG2.top+latestIFVG2.bot)/2).toFixed(2);
 
   const slDist=Math.abs(S.entry-S.sl);
   const rr1=slDist?+(Math.abs(S.tp1-S.entry)/slDist).toFixed(2):0;
@@ -1569,7 +1663,7 @@ function renderVerdict(){
   chips.innerHTML=res.map(r=>{const sh=r.label.split(' ').slice(0,3).join(' ');return r.state===true?`<span class="chip pass">✓ ${sh}</span>`:r.state===false?`<span class="chip fail">✕ ${sh}</span>`:`<span class="chip pend">○ ${sh}</span>`;}).join('');
   const critFail=fail.filter(f=>['news','spread','atzone','biasalign'].includes(f.id));
   const set=(cls,icon,h,s,fb)=>{card.className='verdict-card '+cls;orb.textContent=icon;head.textContent=h;sub.textContent=s;fill.style.background=fb;};
-  if(!S.setupDate){set('grey','⏳','Load charts & set bias','Go to Live Charts tab → charts auto-analyze → then set bias in Setup','var(--txt3)');return;}
+  if(!S.setupDate){set('grey','⏳','Loading analysis…','Fetching cached data — setup will auto-fill in a moment','var(--txt3)');return;}
   if(critFail.length>0){set('red','🔴','DO NOT TRADE',critFail.map(f=>f.label).join(' · '),'var(--red)');return;}
   if(fail.length>0){set('amber','🟡','NOT READY',`${fail.length} condition${fail.length>1?'s':''} failing`,'var(--amber)');return;}
   if(pass.length<7){set('amber','🟡','ALMOST READY',`${pass.length}/${total} confirmed`,'var(--amber)');return;}
@@ -1639,8 +1733,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderPriceUI();renderGauge();renderKeyLevels();renderConditions();renderVerdict();renderNewsAlert();renderPhaseSummary();renderNewsPage();renderJournal();syncCalcUI();updateDailyLimits();
   startFeed();  // reads data/candles.json — no direct API calls
   setInterval(()=>{renderVerdict();renderNewsAlert();renderConditions();renderPhaseSummary();},60000);
-  // Auto-load charts after price fetch settles
-  setTimeout(()=>{if(S.candles15m&&S.candles15m.length){runTradeAnalysis();}},3000);
+  // On load, if we already have cached candles from last session,
+  // run analysis immediately without waiting for the next cache poll
+  if (S.candles15m && S.candles15m.length) {
+    runAndSaveAnalysis();
+  }
 });
 </script>
 </body>
