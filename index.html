@@ -290,9 +290,73 @@ textarea.fv{resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:12p
     </div>
     <div class="topbar-r" id="tb-actions">
       <span id="est-time" style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--txt3)"></span>
+      <button onclick="openManualPull()" style="display:flex;align-items:center;gap:6px;padding:6px 13px;font-size:11px;font-weight:600;background:var(--golda);border:1px solid var(--goldb);border-radius:var(--rsm);color:var(--gold2);cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif" onmouseover="this.style.background='var(--goldb)'" onmouseout="this.style.background='var(--golda)'">
+        ⬇ Manual Pull
+      </button>
     </div>
   </div>
-  <div class="content">
+
+  <!-- ══ MANUAL PULL MODAL ══ -->
+  <div id="manual-pull-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:28px 28px 24px;width:380px;max-width:90vw;position:relative">
+      <!-- Close -->
+      <button onclick="closeManualPull()" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1">✕</button>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Manual Data Pull</div>
+      <div style="font-size:13px;font-weight:600;color:var(--txt);margin-bottom:4px">Force-fetch all live data now</div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:20px;line-height:1.6">Triggers GitHub Actions immediately — bypasses the trading hours window. Use for testing at any time of day.</div>
+
+      <!-- Password input -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt3);display:block;margin-bottom:5px">Password</label>
+        <input id="mp-pass" type="password" placeholder="Enter password…"
+          style="width:100%;padding:10px 12px;font-size:13px;font-family:'IBM Plex Mono',monospace;background:var(--bg4);border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt);outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--line)'"
+          onkeydown="if(event.key==='Enter')triggerManualPull()">
+      </div>
+
+      <!-- GitHub PAT input (stored in session only, never persisted) -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt3);display:block;margin-bottom:5px">GitHub Token (PAT) <span style="color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:0">— see setup instructions below</span></label>
+        <input id="mp-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style="width:100%;padding:10px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--bg4);border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt);outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--line)'"
+          onkeydown="if(event.key==='Enter')triggerManualPull()">
+        <div style="font-size:10px;color:var(--txt3);margin-top:4px;line-height:1.6">
+          GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate → select <strong style="color:var(--txt2)">repo</strong> scope → copy token here. Stored in session only, never saved.
+        </div>
+      </div>
+
+      <!-- Repo details -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+        <div>
+          <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt3);display:block;margin-bottom:4px">GitHub Username</label>
+          <input id="mp-owner" type="text" placeholder="your-github-username"
+            style="width:100%;padding:8px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--bg4);border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt);outline:none">
+        </div>
+        <div>
+          <label style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt3);display:block;margin-bottom:4px">Repo Name</label>
+          <input id="mp-repo" type="text" placeholder="your-repo-name"
+            style="width:100%;padding:8px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--bg4);border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt);outline:none">
+        </div>
+      </div>
+
+      <!-- Status message -->
+      <div id="mp-status" style="display:none;padding:9px 12px;border-radius:var(--rsm);font-size:12px;font-weight:600;margin-bottom:14px;line-height:1.5"></div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:8px">
+        <button onclick="triggerManualPull()" id="mp-btn"
+          style="flex:1;padding:11px;font-size:13px;font-weight:700;background:var(--gold);color:var(--bg);border:none;border-radius:var(--rsm);cursor:pointer;transition:opacity .2s;font-family:'IBM Plex Sans',sans-serif">
+          ⬇ Pull Now
+        </button>
+        <button onclick="closeManualPull()"
+          style="padding:11px 18px;font-size:12px;font-weight:500;background:transparent;border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt3);cursor:pointer;font-family:'IBM Plex Sans',sans-serif">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
 
     <!-- ═══ DASHBOARD PAGE ═══ -->
     <div class="page act" id="pg-dash">
@@ -1805,6 +1869,127 @@ function saveNotes(){S.notes=document.getElementById('notes-ta')?.value||'';pers
    REFRESH ALL
 ═══════════════════════════════════════════ */
 function refreshAll(){loadCachedData();if(document.getElementById('pg-charts').classList.contains('act'))loadAllCharts();}
+
+/* ═══════════════════════════════════════════
+   MANUAL PULL — password-protected workflow trigger
+═══════════════════════════════════════════ */
+const PULL_PASSWORD = 'CliffJoshua02';
+
+function openManualPull() {
+  const overlay = document.getElementById('manual-pull-overlay');
+  overlay.style.display = 'flex';
+  // Restore saved owner/repo from sessionStorage (never persisted to localStorage)
+  const saved = sessionStorage.getItem('mp_meta');
+  if (saved) {
+    try {
+      const m = JSON.parse(saved);
+      if (m.owner) document.getElementById('mp-owner').value = m.owner;
+      if (m.repo)  document.getElementById('mp-repo').value  = m.repo;
+    } catch(e) {}
+  }
+  setTimeout(() => document.getElementById('mp-pass').focus(), 100);
+}
+
+function closeManualPull() {
+  document.getElementById('manual-pull-overlay').style.display = 'none';
+  document.getElementById('mp-pass').value  = '';
+  document.getElementById('mp-status').style.display = 'none';
+  document.getElementById('mp-btn').disabled = false;
+  document.getElementById('mp-btn').textContent = '⬇ Pull Now';
+}
+
+function setMPStatus(msg, cls) {
+  const el = document.getElementById('mp-status');
+  el.style.display = 'block';
+  el.textContent   = msg;
+  el.style.cssText = `display:block;padding:9px 12px;border-radius:var(--rsm);font-size:12px;font-weight:600;margin-bottom:14px;line-height:1.5;` +
+    (cls === 'ok'  ? 'background:var(--greena);border:1px solid var(--greenb);color:var(--green);' :
+     cls === 'err' ? 'background:var(--reda);border:1px solid var(--redb);color:var(--red);'       :
+                     'background:var(--ambera);border:1px solid var(--amberb);color:var(--amber);');
+}
+
+async function triggerManualPull() {
+  const pass  = document.getElementById('mp-pass').value.trim();
+  const token = document.getElementById('mp-token').value.trim();
+  const owner = document.getElementById('mp-owner').value.trim();
+  const repo  = document.getElementById('mp-repo').value.trim();
+
+  // Password check
+  if (pass !== PULL_PASSWORD) {
+    setMPStatus('❌ Wrong password. Try again.', 'err');
+    document.getElementById('mp-pass').focus();
+    return;
+  }
+
+  // Field validation
+  if (!token) { setMPStatus('GitHub token is required. See instructions below the field.', 'err'); return; }
+  if (!owner) { setMPStatus('Enter your GitHub username.', 'err'); return; }
+  if (!repo)  { setMPStatus('Enter your repository name.', 'err'); return; }
+
+  // Save owner/repo for next time (not the token — that's security-sensitive)
+  sessionStorage.setItem('mp_meta', JSON.stringify({ owner, repo }));
+
+  const btn = document.getElementById('mp-btn');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Triggering…';
+  setMPStatus('Sending request to GitHub Actions…', 'load');
+
+  try {
+    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/fetch.yml/dispatches`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept':        'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        ref:    'main',
+        inputs: { manual_override: 'true' },
+      }),
+    });
+
+    if (res.status === 204) {
+      // 204 = accepted, workflow is now queued
+      setMPStatus('✅ Workflow triggered! GitHub Actions is running now.\n\nIt takes about 60–90 seconds to fetch data and commit. The page will auto-refresh when new data is available.', 'ok');
+      btn.textContent = '✓ Triggered';
+      // Start polling cache every 15s for the next 3 minutes
+      let polls = 0;
+      const poll = setInterval(async () => {
+        polls++;
+        try {
+          await loadCachedData();
+          setMPStatus(`✅ Workflow triggered! Polling for new data… (${polls * 15}s elapsed)`, 'ok');
+        } catch(e) {}
+        if (polls >= 12) clearInterval(poll); // stop after 3 min
+      }, 15000);
+    } else if (res.status === 401) {
+      setMPStatus('❌ Token rejected (401). Make sure it has the "repo" scope and hasn\'t expired.', 'err');
+      btn.disabled = false; btn.textContent = '⬇ Pull Now';
+    } else if (res.status === 404) {
+      setMPStatus(`❌ Repo not found (404). Check username "${owner}" and repo "${repo}" are correct.`, 'err');
+      btn.disabled = false; btn.textContent = '⬇ Pull Now';
+    } else if (res.status === 422) {
+      setMPStatus('❌ Workflow not found (422). Make sure fetch.yml is committed to your main branch.', 'err');
+      btn.disabled = false; btn.textContent = '⬇ Pull Now';
+    } else {
+      const body = await res.text().catch(() => '');
+      setMPStatus(`❌ GitHub returned ${res.status}. ${body.slice(0,150)}`, 'err');
+      btn.disabled = false; btn.textContent = '⬇ Pull Now';
+    }
+  } catch(e) {
+    setMPStatus(`❌ Network error: ${e.message}`, 'err');
+    btn.disabled = false; btn.textContent = '⬇ Pull Now';
+  }
+}
+
+// Close modal on overlay click (not on modal itself)
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('manual-pull-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeManualPull();
+  });
+});
 
 /* ═══════════════════════════════════════════
    TOAST
