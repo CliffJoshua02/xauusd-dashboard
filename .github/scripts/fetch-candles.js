@@ -45,6 +45,11 @@ function nowTs() { return Math.floor(Date.now() / 1000); }
 function getCurrentMonth() { return new Date().toISOString().slice(0, 7); }
 
 function isValidTradingWindow() {
+  // When triggered manually from the website, skip the window guard
+  if (process.env.MANUAL_OVERRIDE === 'true') {
+    console.log('[INFO] MANUAL_OVERRIDE=true — skipping trading window guard');
+    return true;
+  }
   const et = nowET();
   const dow = et.getDay(), h = et.getHours();
   if (dow === 0 || dow === 6) { console.log(`[SKIP] Weekend`); return false; }
@@ -272,9 +277,10 @@ async function main() {
 
   // ── API NINJA ───────────────────────────────────────────
   const ninjaElapsed = ts - (usage.ninja.lastTs || 0);
+  const isManual     = process.env.MANUAL_OVERRIDE === 'true';
   if (usage.ninja.count >= NINJA_HARD_STOP) {
     console.log(`[SKIP] Ninja SUSPENDED — ${usage.ninja.count}/${NINJA_HARD_STOP}`);
-  } else if (ninjaElapsed < NINJA_MIN_INTERVAL) {
+  } else if (!isManual && ninjaElapsed < NINJA_MIN_INTERVAL) {
     console.log(`[SKIP] Ninja: ${ninjaElapsed}s ago (min ${NINJA_MIN_INTERVAL}s)`);
   } else {
     try {
@@ -291,7 +297,7 @@ async function main() {
   if (usage.gold.count >= GOLD_HARD_STOP) {
     console.log(`[SKIP] GoldAPI SUSPENDED — ${usage.gold.count}/${GOLD_HARD_STOP}`);
     spot = deriveSpotFromCandles(candles1m, spot);
-  } else if (goldElapsed < GOLD_MIN_INTERVAL) {
+  } else if (!isManual && goldElapsed < GOLD_MIN_INTERVAL) {
     console.log(`[SKIP] GoldAPI: ${goldElapsed}s ago (min ${GOLD_MIN_INTERVAL}s). Deriving from candles.`);
     // Update price from fresh candle close even when not calling GoldAPI
     if (candles1m.length) spot = deriveSpotFromCandles(candles1m, spot);
