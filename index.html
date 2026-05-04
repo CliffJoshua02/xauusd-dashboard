@@ -831,7 +831,10 @@ body {
   </div>
   <div class="header-right">
     <span class="session-badge" id="session-badge">...</span>
-    <div class="live-dot"></div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <div id="api-dot" style="width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pulse 2s infinite;flex-shrink:0;transition:background .4s,box-shadow .4s"></div>
+      <span id="api-label" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text3);white-space:nowrap">Connecting...</span>
+    </div>
   </div>
 </div>
 
@@ -863,6 +866,10 @@ body {
         <div class="price-meta-label">vs EQ</div>
         <div class="price-meta-val" id="meta-vs-eq">—</div>
       </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)">
+      <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3)" id="last-updated-label">Auto-refreshes every 60s</div>
+      <button onclick="fetchLivePrice()" style="font-size:10px;font-weight:600;font-family:'Syne',sans-serif;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--gold);cursor:pointer">↻ Refresh now</button>
     </div>
   </div>
 
@@ -1606,6 +1613,140 @@ function restoreBiasButtons() {
   });
 }
 
+// ── LIVE PRICE API ──
+const API_KEY = 'goldapi-f9d7da3d75a0556d6ef2c31785d39547-io';
+const API_URL = 'https://www.goldapi.io/api/XAU/USD';
+let lastFetchTime = null;
+let fetchInterval = null;
+let previousPrice = null;
+
+function setApiStatus(status, msg) {
+  const dot = document.getElementById('api-dot');
+  const label = document.getElementById('api-label');
+  if (!dot || !label) return;
+  const styles = {
+    loading: { bg: 'var(--amber)',     shadow: 'var(--amber)',   text: msg || 'Connecting...' },
+    live:    { bg: 'var(--green)',     shadow: 'var(--green)',   text: msg || 'Live' },
+    error:   { bg: 'var(--red)',       shadow: 'var(--red)',     text: msg || 'Error' },
+    stale:   { bg: 'rgba(212,168,67,0.5)', shadow: 'var(--gold)', text: msg || 'Stale' },
+  };
+  const s = styles[status] || styles.loading;
+  dot.style.background = s.bg;
+  dot.style.boxShadow = `0 0 6px ${s.shadow}`;
+  label.textContent = s.text;
+}
+
+async function fetchLivePrice() {
+  setApiStatus('loading', 'Fetching...');
+  try {
+    const res = await fetch(API_URL, {
+      method: 'GET',
+      headers: { 'x-access-token': API_KEY, 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // ── Parse response fields ──
+    // price = current spot, open_price = today's open, high_price = today's high,
+    // low_price = today's low, ask = ask price, bid = bid price, ch = change, chp = change %
+    const price  = data.price   || data.ask || 0;
+    const ask    = data.ask     || price;
+    const bid    = data.bid     || price;
+    const high   = data.high_price  || data.price || price;
+    const low    = data.low_price   || data.price || price;
+    const open   = data.open_price  || price;
+    const change = data.ch  || 0;
+    const changePct = data.chp || 0;
+    const spread = parseFloat((ask - bid).toFixed(2));
+    const eq     = parseFloat(((high + low) / 2).toFixed(2));
+
+    // ── Update state ──
+    previousPrice = state.price;
+    state.price     = parseFloat(price.toFixed(2));
+    state.high      = parseFloat(high.toFixed(2));
+    state.low       = parseFloat(low.toFixed(2));
+    state.spread    = spread > 0 ? spread : 0.28;
+    state.eq        = eq;
+    // Keep existing demand/supply if user set them; pre-fill if still at defaults
+    if (!state.demandBot || state.demandBot === 4550) state.demandBot = parseFloat((low - 5).toFixed(2));
+    if (!state.demandTop || state.demandTop === 4601) state.demandTop = parseFloat((low + 5).toFixed(2));
+    if (!state.supplyBot || state.supplyBot === 4645) state.supplyBot = parseFloat((high - 5).toFixed(2));
+    if (!state.supplyTop || state.supplyTop === 4665) state.supplyTop = parseFloat((high + 5).toFixed(2));
+    if (!state.ifvg      || state.ifvg === 4615)      state.ifvg      = parseFloat(((high + eq) / 2).toFixed(2));
+
+    // ── Update hero price change badge ──
+    const changeEl = document.getElementById('hero-change');
+    if (changeEl) {
+      const sign = change >= 0 ? '+' : '';
+      changeEl.textContent = `${sign}${change.toFixed(2)} (${sign}${changePct.toFixed(2)}%)`;
+      changeEl.className = 'price-change ' + (change > 0 ? 'up' : change < 0 ? 'down' : 'flat');
+    }
+
+    // ── Flash price if it moved ──
+    if (previousPrice && previousPrice !== state.price) {
+      const heroEl = document.getElementById('hero-price');
+      if (heroEl) {
+        const flashColor = state.price > previousPrice ? 'rgba(61,186,126,0.2)' : 'rgba(224,92,92,0.2)';
+        heroEl.style.transition = 'background 0.1s';
+        heroEl.style.background = flashColor;
+        setTimeout(() => { heroEl.style.background = 'transparent'; }, 400);
+      }
+    }
+
+    // ── Sync Setup inputs with live data ──
+    const fieldMap = {
+      'inp-high':  state.high,
+      'inp-low':   state.low,
+      'inp-price': state.price,
+    };
+    Object.entries(fieldMap).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el && (!el.value || el === document.activeElement === false)) el.value = val;
+    });
+
+    // ── Timestamp ──
+    lastFetchTime = new Date();
+    const timeStr = lastFetchTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setApiStatus('live', `Live · ${timeStr}`);
+
+    // ── Refresh all displays ──
+    syncSetupInputs();
+    refreshAll();
+    saveState();
+
+  } catch (err) {
+    console.error('GoldAPI error:', err);
+    // If market is closed (weekends/holidays), API returns error — show stale gracefully
+    const isMarketClosed = err.message && (err.message.includes('403') || err.message.includes('closed'));
+    if (isMarketClosed) {
+      setApiStatus('stale', 'Market closed');
+    } else {
+      setApiStatus('error', 'Retry in 60s');
+    }
+    // Still refresh with whatever we have saved
+    refreshAll();
+  }
+}
+
+function startLiveFeed() {
+  fetchLivePrice(); // immediate fetch on load
+  fetchInterval = setInterval(fetchLivePrice, 60000); // then every 60 seconds
+}
+
+function stopLiveFeed() {
+  if (fetchInterval) clearInterval(fetchInterval);
+}
+
+// Pause fetching when tab is hidden (saves API calls)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopLiveFeed();
+  } else {
+    // Resume — fetch immediately then restart interval
+    startLiveFeed();
+  }
+});
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('jf-date').value = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -1616,6 +1757,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderJournal();
   restoreBiasButtons();
   refreshAll();
+  startLiveFeed(); // 🔴 kick off live price feed
 });
 </script>
 </body>
