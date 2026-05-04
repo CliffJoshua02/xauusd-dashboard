@@ -197,7 +197,7 @@ async function fetchCandleInterval(interval, limit) {
   const ts    = nowTs();
   const secs  = { '1h': 3600, '15m': 900, '1m': 60 }[interval] || 3600;
   const start = ts - secs * (limit + 5);
-  const url   = `https://api.api-ninjas.com/v1/goldpricehistorical?commodity=gold&interval=${interval}&start=${start}&end=${ts}`;
+  const url   = `https://api.api-ninjas.com/v1/commoditypricehistorical?name=gold&interval=${interval}&start=${start}&end=${ts}`;
   console.log(`[FETCH] Ninja ${interval}…`);
   const raw = await httpGet(url, { 'X-Api-Key': NINJA_KEY });
   const arr = JSON.parse(raw);
