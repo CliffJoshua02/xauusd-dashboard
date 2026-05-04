@@ -1888,7 +1888,7 @@ async function fpFetchCandles(interval, limit) {
   const now   = Math.floor(Date.now() / 1000);
   const secs  = interval === '1h' ? 3600 : interval === '15m' ? 900 : 60;
   const start = now - secs * (limit + 5);
-  const url   = `https://api.api-ninjas.com/v1/goldpricehistorical?commodity=gold&interval=${interval}&start=${start}&end=${now}`;
+  const url   = `https://api.api-ninjas.com/v1/commoditypricehistorical?name=gold&interval=${interval}&start=${start}&end=${now}`;
   const r = await fetch(url, { headers: { 'X-Api-Key': FP_NINJA_KEY } });
   if (!r.ok) throw new Error(`Ninja ${interval}: HTTP ${r.status}`);
   const arr = await r.json();
