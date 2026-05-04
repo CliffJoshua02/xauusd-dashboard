@@ -788,16 +788,12 @@ textarea.fv{resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:12p
 
 <script>
 /* ═══════════════════════════════════════════
-   KEYS & STATE
+   STATE & KEYS
 ═══════════════════════════════════════════ */
-// No API keys in the frontend — all data comes from the cached JSON
-// written by GitHub Actions every ~150 seconds during trading hours.
-const CACHE_URL = './data/candles.json';
-// Cache is re-fetched by the browser every 90 seconds so visitors
-// always see the latest committed data without any API calls.
-const CACHE_POLL_MS = 90000;
-const STORE      = 'xau5';
-const TODAY      = new Date().toDateString();
+// All data fetched on demand via Force Pull button.
+// No background polling, no cache files, no GitHub Actions.
+const STORE = 'xau5';
+const TODAY = new Date().toDateString();
 
 // All times in Eastern Time (ET)
 function nowET() {
@@ -883,127 +879,31 @@ function setApiStatus(state,txt){
   document.getElementById('api-txt').textContent=txt;
 }
 /* ═══════════════════════════════════════════
-   CACHE READER — reads data/candles.json
-   written by GitHub Actions every ~150s
-   No API calls happen in the browser at all.
+   STARTUP — renders from localStorage only.
+   All live data comes from Force Pull button.
 ═══════════════════════════════════════════ */
-let cacheTimer = null;
-
-async function loadCachedData() {
-  setApiStatus('', 'Loading…');
-  try {
-    // Cache-bust with timestamp so browser doesn't serve stale file
-    const r = await fetch(CACHE_URL + '?v=' + Math.floor(Date.now()/1000));
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = await r.json();
-
-    // ── Spot price from cache ──
-    const spot = d.spot;
-    if (spot && spot.price) {
-      prevPx = S.price;
-      S.price     = +spot.price.toFixed(2);
-      S.high      = +spot.high.toFixed(2);
-      S.low       = +spot.low.toFixed(2);
-      S.open      = +spot.open.toFixed(2);
-      S.change    = +spot.change.toFixed(2);
-      S.changePct = +spot.changePct.toFixed(2);
-      S.spread    = +spot.spread.toFixed(2);
-      S.eq        = +((S.high + S.low) / 2).toFixed(2);
-    }
-
-    // ── Candles from cache ──
-    if (d.candles1h  && d.candles1h.length)  S.candles1h  = d.candles1h;
-    if (d.candles15m && d.candles15m.length) S.candles15m = d.candles15m;
-    if (d.candles1m  && d.candles1m.length)  S.candles1m  = d.candles1m;
-
-    // ── Auto-bias from cache (detected by fetch script) ──
-    if (d.bias) {
-      S.biasH1  = d.bias.h1  || S.biasH1;
-      S.biasM15 = d.bias.m15 || S.biasM15;
-      S.biasReason1h  = d.bias.h1Reason  || '';
-      S.biasReason15m = d.bias.m15Reason || '';
-      S.biasAligned   = d.bias.aligned;
-      S.biasDetectedAt = d.bias.detectedAt || '';
-    }
-
-    // ── Auto-news from cache (fetched from ForexFactory) ──
-    if (d.news && Array.isArray(d.news)) {
-      // Keep any manual overrides the user added this session,
-      // then layer in the auto-fetched events
-      const manualNews = S.news.filter(n => !n.auto);
-      const autoNews   = d.news.filter(n => n.auto);
-      S.news = [...autoNews, ...manualNews];
-    }
-
-    // ── Status display ──
-    const meta     = d.meta || {};
-    const fetchET  = meta.fetchedAtET || meta.fetchedAt || '—';
-    const nUsage   = meta.ninja?.usage  || meta.ninjaUsage  || 0;
-    const nLimit   = meta.ninja?.limit  || meta.ninjaLimit  || 2700;
-    const gUsage   = meta.gold?.usage   || meta.goldUsage   || 0;
-    const gLimit   = meta.gold?.limit   || meta.goldLimit   || 90;
-    const nStatus  = meta.ninja?.status || 'OK';
-    const gStatus  = meta.gold?.status  || 'OK';
-    const anyAlert = nStatus !== 'OK' || gStatus !== 'OK';
-
-    if (anyAlert) {
-      setApiStatus('err', `⚠ Ninja:${nUsage}/${nLimit} Gold:${gUsage}/${gLimit}`);
-    } else {
-      S.lastFetch = fetchET;
-      setApiStatus('live', `${fetchET} · N:${nUsage}/${nLimit} G:${gUsage}/${gLimit}`);
-    }
-
-    persist();
-    renderPriceUI();
-    renderGauge();
-    renderVerdict();
-    renderNewsAlert();
-
-    // Auto-run analysis whenever fresh candle data arrives —
-    // this fills all Setup fields without the user doing anything
-    if (S.candles15m && S.candles15m.length) {
-      runAndSaveAnalysis();
-    }
-
-    syncSetupAutoFields();
-    syncCalcUI();
-    renderKeyLevels();
-    renderBiasAlignDisp();   // update bias display with auto-detected values
-    renderNewsSetup();        // update news list with auto-fetched events
-    renderNewsPage();         // update news page too
-
-    // If charts page is open, redraw with new candle data
-    if (document.getElementById('pg-charts').classList.contains('act')) {
-      loadAllCharts();
-    }
-
-  } catch(e) {
-    console.error('Cache load error:', e);
-    // Outside trading hours or weekend — not an error, just no new data
-    const isWeekend = [0,6].includes(new Date().getDay());
-    const etH = nowET().getHours();
-    const outsideHours = etH < 8 || etH >= 13;
-    if (isWeekend) {
-      setApiStatus('err', 'Weekend — no new data (resumes Mon 8AM ET)');
-    } else if (outsideHours) {
-      setApiStatus('err', `Outside session (8AM–1PM ET) — last: ${S.lastFetch||'—'}`);
-    } else {
-      setApiStatus('err', 'Cache unavailable — retry in 90s');
-    }
-    // Still render with whatever we have saved in localStorage
-    renderPriceUI();
-    renderVerdict();
-  }
-}
-
 function startFeed() {
-  loadCachedData();
-  cacheTimer = setInterval(loadCachedData, CACHE_POLL_MS);
+  // Render immediately from whatever is in localStorage
+  // (populated by the last Force Pull)
+  if (S.price) {
+    renderPriceUI();
+    setApiStatus('live', 'Last pull · ' + (S.lastFetch || '—'));
+  } else {
+    setApiStatus('', 'Press ⬇ Force Pull to load live data');
+  }
+  if (S.candles15m && S.candles15m.length) {
+    runAndSaveAnalysis();
+  }
+  renderGauge();
+  renderVerdict();
+  renderNewsAlert();
+  syncSetupAutoFields();
+  syncCalcUI();
+  renderKeyLevels();
+  renderBiasAlignDisp();
+  renderNewsSetup();
+  renderNewsPage();
 }
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) clearInterval(cacheTimer);
-  else startFeed();
-});
 
 /* ═══════════════════════════════════════════
    CHART ENGINE
@@ -1330,7 +1230,7 @@ async function loadAllCharts(){
   document.getElementById('c15m-status').textContent='Loading';document.getElementById('c15m-status').className='chip pend';
   document.getElementById('c1m-status').textContent='Loading';document.getElementById('c1m-status').className='chip pend';
 
-  // Data already loaded into S.candles* by loadCachedData()
+  // Candles already in state from last Force Pull — just redraw
   // loadAllCharts just draws from the cached state — zero API calls
   const [c1h,c15m,c1m] = [S.candles1h, S.candles15m, S.candles1m];
 
@@ -1828,7 +1728,7 @@ function saveNotes(){S.notes=document.getElementById('notes-ta')?.value||'';pers
 /* ═══════════════════════════════════════════
    REFRESH ALL
 ═══════════════════════════════════════════ */
-function refreshAll(){loadCachedData();if(document.getElementById('pg-charts').classList.contains('act'))loadAllCharts();}
+function refreshAll(){ startFeed(); if(document.getElementById('pg-charts').classList.contains('act')) loadAllCharts(); }
 
 /* ═══════════════════════════════════════════
    MANUAL PULL — password protected
@@ -2031,7 +1931,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('jf-date').value=new Date().toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
   if(S.notes){const e=document.getElementById('notes-ta');if(e)e.value=S.notes;}
   renderPriceUI();renderGauge();renderKeyLevels();renderConditions();renderVerdict();renderNewsAlert();renderPhaseSummary();renderNewsPage();renderJournal();syncCalcUI();updateDailyLimits();
-  startFeed();  // reads data/candles.json — no direct API calls
+  startFeed();  // renders from localStorage; Force Pull loads fresh data
   setInterval(()=>{renderVerdict();renderNewsAlert();renderConditions();renderPhaseSummary();},60000);
   // On load, if we already have cached candles from last session,
   // run analysis immediately without waiting for the next cache poll
