@@ -559,27 +559,48 @@ textarea.fv{resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:12p
         </div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div class="card">
-            <div class="card-hdr"><div class="card-title">Your Bias — set manually</div></div>
+            <div class="card-hdr">
+              <div class="card-title">Bias — Auto-detected</div>
+              <span class="chip auto">Candle structure</span>
+            </div>
             <div class="card-body">
-              <div class="g2" style="gap:12px">
-                <div>
-                  <div class="fl" style="margin-bottom:6px">1H Bias</div>
-                  <div class="bias-row">
-                    <button class="bias-btn bull" data-tf="h1" data-v="Bull" onclick="setBias(this)">↑ Bull</button>
-                    <button class="bias-btn bear" data-tf="h1" data-v="Bear" onclick="setBias(this)">↓ Bear</button>
-                    <button class="bias-btn rng"  data-tf="h1" data-v="Rng"  onclick="setBias(this)">→ Rng</button>
-                  </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                <div style="background:var(--bg4);border-radius:var(--rsm);padding:10px 12px">
+                  <div class="fl" style="margin-bottom:4px">1H Bias</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600" id="auto-bias-h1-val">—</div>
+                  <div style="font-size:9px;color:var(--txt3);margin-top:3px;line-height:1.4" id="auto-bias-h1-reason">Loading…</div>
                 </div>
-                <div>
-                  <div class="fl" style="margin-bottom:6px">15M Bias</div>
-                  <div class="bias-row">
-                    <button class="bias-btn bull" data-tf="m15" data-v="Bull" onclick="setBias(this)">↑ Bull</button>
-                    <button class="bias-btn bear" data-tf="m15" data-v="Bear" onclick="setBias(this)">↓ Bear</button>
-                    <button class="bias-btn rng"  data-tf="m15" data-v="Rng"  onclick="setBias(this)">→ Rng</button>
+                <div style="background:var(--bg4);border-radius:var(--rsm);padding:10px 12px">
+                  <div class="fl" style="margin-bottom:4px">15M Bias</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600" id="auto-bias-m15-val">—</div>
+                  <div style="font-size:9px;color:var(--txt3);margin-top:3px;line-height:1.4" id="auto-bias-m15-reason">Loading…</div>
+                </div>
+              </div>
+              <div class="align-disp" id="align-disp">Waiting for auto-detection…</div>
+              <div style="margin-top:10px">
+                <button onclick="document.getElementById('bias-override').style.display=document.getElementById('bias-override').style.display==='none'?'block':'none'" style="width:100%;padding:7px;font-size:11px;background:transparent;border:1px solid var(--line);border-radius:var(--rsm);color:var(--txt3);cursor:pointer;text-align:left">▼ Manual override (if you disagree)</button>
+                <div id="bias-override" style="display:none;margin-top:8px;padding:10px;background:var(--bg3);border-radius:var(--rsm);border:1px solid var(--amberb)">
+                  <div style="font-size:10px;color:var(--amber);margin-bottom:8px">Overrides auto-detection until next data refresh</div>
+                  <div class="g2" style="gap:10px">
+                    <div>
+                      <div class="fl" style="margin-bottom:5px">Override 1H</div>
+                      <div class="bias-row">
+                        <button class="bias-btn bull" data-tf="h1" data-v="Bull" onclick="setBias(this)">↑ Bull</button>
+                        <button class="bias-btn bear" data-tf="h1" data-v="Bear" onclick="setBias(this)">↓ Bear</button>
+                        <button class="bias-btn rng"  data-tf="h1" data-v="Rng"  onclick="setBias(this)">→ Rng</button>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="fl" style="margin-bottom:5px">Override 15M</div>
+                      <div class="bias-row">
+                        <button class="bias-btn bull" data-tf="m15" data-v="Bull" onclick="setBias(this)">↑ Bull</button>
+                        <button class="bias-btn bear" data-tf="m15" data-v="Bear" onclick="setBias(this)">↓ Bear</button>
+                        <button class="bias-btn rng"  data-tf="m15" data-v="Rng"  onclick="setBias(this)">→ Rng</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="align-disp" id="align-disp">Set both biases to see alignment</div>
             </div>
           </div>
           <div class="card">
@@ -770,6 +791,7 @@ function defState() {
     price:0,high:0,low:0,open:0,eq:0,spread:0.28,change:0,changePct:0,
     dt:0,db:0,sb:0,st:0,ifvg:0,ob:0,entry:0,sl:0,tp1:0,tp2:0,
     biasH1:null,biasM15:null,
+    biasReason1h:'',biasReason15m:'',biasAligned:false,biasDetectedAt:'',
     bal:2480,rsk:1,
     news:[],conds:{},condDate:null,
     journal:[],notes:'',
@@ -870,21 +892,41 @@ async function loadCachedData() {
     if (d.candles15m && d.candles15m.length) S.candles15m = d.candles15m;
     if (d.candles1m  && d.candles1m.length)  S.candles1m  = d.candles1m;
 
+    // ── Auto-bias from cache (detected by fetch script) ──
+    if (d.bias) {
+      S.biasH1  = d.bias.h1  || S.biasH1;
+      S.biasM15 = d.bias.m15 || S.biasM15;
+      S.biasReason1h  = d.bias.h1Reason  || '';
+      S.biasReason15m = d.bias.m15Reason || '';
+      S.biasAligned   = d.bias.aligned;
+      S.biasDetectedAt = d.bias.detectedAt || '';
+    }
+
+    // ── Auto-news from cache (fetched from ForexFactory) ──
+    if (d.news && Array.isArray(d.news)) {
+      // Keep any manual overrides the user added this session,
+      // then layer in the auto-fetched events
+      const manualNews = S.news.filter(n => !n.auto);
+      const autoNews   = d.news.filter(n => n.auto);
+      S.news = [...autoNews, ...manualNews];
+    }
+
     // ── Status display ──
     const meta     = d.meta || {};
     const fetchET  = meta.fetchedAtET || meta.fetchedAt || '—';
-    const usage    = meta.monthlyUsage || 0;
-    const limit    = meta.monthlyLimit || 2700;
-    const budgetPct= meta.budgetPct || '—';
-    const status   = meta.status || 'OK';
+    const nUsage   = meta.ninja?.usage  || meta.ninjaUsage  || 0;
+    const nLimit   = meta.ninja?.limit  || meta.ninjaLimit  || 2700;
+    const gUsage   = meta.gold?.usage   || meta.goldUsage   || 0;
+    const gLimit   = meta.gold?.limit   || meta.goldLimit   || 90;
+    const nStatus  = meta.ninja?.status || 'OK';
+    const gStatus  = meta.gold?.status  || 'OK';
+    const anyAlert = nStatus !== 'OK' || gStatus !== 'OK';
 
-    if (status === 'SUSPENDED') {
-      setApiStatus('err', `SUSPENDED — ${usage}/${limit} calls used`);
-    } else if (status === 'WARNING') {
-      setApiStatus('err', `Warning: ${usage}/${limit} calls`);
+    if (anyAlert) {
+      setApiStatus('err', `⚠ Ninja:${nUsage}/${nLimit} Gold:${gUsage}/${gLimit}`);
     } else {
       S.lastFetch = fetchET;
-      setApiStatus('live', `Cached · ${fetchET} · ${usage}/${limit} (${budgetPct})`);
+      setApiStatus('live', `${fetchET} · N:${nUsage}/${nLimit} G:${gUsage}/${gLimit}`);
     }
 
     persist();
@@ -902,6 +944,9 @@ async function loadCachedData() {
     syncSetupAutoFields();
     syncCalcUI();
     renderKeyLevels();
+    renderBiasAlignDisp();   // update bias display with auto-detected values
+    renderNewsSetup();        // update news list with auto-fetched events
+    renderNewsPage();         // update news page too
 
     // If charts page is open, redraw with new candle data
     if (document.getElementById('pg-charts').classList.contains('act')) {
@@ -1556,7 +1601,14 @@ function renderPriceUI(){
   sd('d-px',p?p.toFixed(2):'—');sd('d-op',S.open||'—');sd('d-hi',S.high||'—','a');sd('d-lo',S.low||'—','a');sd('d-eq',S.eq||'—','a');
   const sp2=document.getElementById('d-sp');if(sp2){sp2.textContent=S.spread?(S.spread+' pts'):'—';sp2.className='stat-val '+(S.spread<=0.5?'g':'r');}
   const ve=document.getElementById('d-vseq');if(ve&&p&&S.eq){const d=(p-S.eq).toFixed(2);ve.textContent=(d>0?'+':'')+d+' pts';ve.className='stat-val '+(d>0?'g':'r');}
-  const bi=document.getElementById('d-bias');if(bi){if(S.biasH1&&S.biasM15){bi.textContent=S.biasH1+' / '+S.biasM15;bi.className='stat-val '+(S.biasH1===S.biasM15?'g':'r');}else{bi.textContent='Not set';bi.className='stat-val';}}
+  const bi=document.getElementById('d-bias');
+  if(bi){
+    if(S.biasH1&&S.biasM15){
+      const aligned = S.biasH1===S.biasM15 && S.biasH1!=='Rng';
+      bi.textContent=S.biasH1+' / '+S.biasM15+(aligned?' ✅':S.biasH1==='Rng'||S.biasM15==='Rng'?' ⚠':' ❌');
+      bi.className='stat-val '+(aligned?'g':S.biasH1==='Rng'||S.biasM15==='Rng'?'a':'r');
+    }else{bi.textContent='Detecting…';bi.className='stat-val';}
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -1629,8 +1681,14 @@ const COND_DEFS=[
   {id:'spread',   label:'Spread < 0.5 pts',             auto:true,  canM:false,eval:()=>S.spread?S.spread<=0.5:null,detail:()=>S.spread?`${S.spread} pts ${S.spread<=0.5?'✅':'— too wide'}`:'Auto from API'},
   {id:'h1marked', label:'1H levels marked on chart',    auto:false, canM:true, eval:()=>S.conds['h1marked']??null,detail:()=>S.conds['h1marked']?'Confirmed ✅':'Draw High, Low, EQ on your 1H chart'},
   {id:'fvgmarked',label:'FVG / IFVG identified',        auto:false, canM:true, eval:()=>S.ifvg?(S.conds['fvgmarked']??null):S.conds['fvgmarked']??null,detail:()=>S.ifvg?`IFVG at ${S.ifvg} (auto-detected) ${S.conds['fvgmarked']?'✅':''}`:'Check Charts tab — IFVG auto-detected'},
-  {id:'biasset',  label:'1H + 15M bias set',            auto:false, canM:false,eval:()=>S.biasH1&&S.biasM15?true:null,detail:()=>S.biasH1&&S.biasM15?`1H: ${S.biasH1} · 15M: ${S.biasM15} ✅`:'Set bias in Setup tab'},
-  {id:'biasalign',label:'1H + 15M ALIGNED',             auto:false, canM:false,eval:()=>{const b=evalBiasAlign();if(b===null)return S.conds['biasalign']??null;if(b==='range')return false;return b;},detail:()=>{const b=evalBiasAlign();if(b===null)return'Set both biases first';if(b==='range')return'One TF ranging — wait';if(b===true)return`✅ Both ${S.biasH1} — valid direction`;return`❌ CONFLICT: 1H ${S.biasH1} vs 15M ${S.biasM15}`;}},
+  {id:'biasset',  label:'1H + 15M bias detected',       auto:true, canM:false,
+    eval:()=>S.biasH1&&S.biasM15?true:null,
+    detail:()=>S.biasH1&&S.biasM15
+      ? `1H: ${S.biasH1} · 15M: ${S.biasM15} ✅ (auto-detected from candle structure)`
+      : 'Waiting for candle data to load…'},
+  {id:'biasalign',label:'1H + 15M ALIGNED',             auto:true, canM:false,
+    eval:()=>{const b=evalBiasAlign();if(b===null)return null;if(b==='range')return false;return b;},
+    detail:()=>{const b=evalBiasAlign();if(b===null)return'Waiting for bias detection…';if(b==='range')return`⚠ ${S.biasH1==='Rng'?'1H':'15M'} is ranging — wait for clear direction`;if(b===true)return`✅ Both ${S.biasH1} — look for ${S.biasH1==='Bull'?'LONG':'SHORT'} entries`;return`❌ CONFLICT: 1H ${S.biasH1} vs 15M ${S.biasM15} — do not trade`;}},
   {id:'atzone',   label:'Price AT a zone (not mid)',     auto:true,  canM:false,eval:()=>evalAtZone(),detail:()=>{const r=evalAtZone();if(r===null)return'Set zones or load Charts';return r?'Price at tradeable zone ✅':'❌ Mid-range — wait for zone';}},
   {id:'confirm',  label:'1M entry candle seen',         auto:false, canM:true, eval:()=>S.conds['confirm']??null,detail:()=>S.conds['confirm']?'Confirmed ✅':'Hammer/engulfing on 1M chart at zone'},
 ];
@@ -1685,14 +1743,43 @@ function syncSetupAutoFields(){
 function syncSetupUI(){syncSetupAutoFields();const m={'s-bal':S.bal,'s-rsk':S.rsk};Object.entries(m).forEach(([id,v])=>{const e=document.getElementById(id);if(e&&v)e.value=v;});restoreBias();renderBiasAlignDisp();renderNewsSetup();const b=document.getElementById('setup-saved-bar');if(b){b.style.display=S.setupDate===TODAY?'block':'none';}updateDailyLimits();}
 function setBias(btn){const tf=btn.dataset.tf,v=btn.dataset.v;document.querySelectorAll(`.bias-btn[data-tf="${tf}"]`).forEach(b=>b.classList.remove('on'));btn.classList.add('on');if(tf==='h1')S.biasH1=v;else S.biasM15=v;renderBiasAlignDisp();persist();}
 function restoreBias(){['h1','m15'].forEach(tf=>{const v=tf==='h1'?S.biasH1:S.biasM15;if(!v)return;document.querySelectorAll(`.bias-btn[data-tf="${tf}"]`).forEach(b=>b.classList.toggle('on',b.dataset.v===v));});}
-function renderBiasAlignDisp(){const el=document.getElementById('align-disp');if(!el)return;if(!S.biasH1||!S.biasM15){el.textContent='Set both biases';el.className='align-disp';return;}const b=evalBiasAlign();if(b===true){el.textContent=`✅ ALIGNED — Both ${S.biasH1}. Look for ${S.biasH1==='Bull'?'LONG':'SHORT'} entries.`;el.className='align-disp aligned';}else if(b==='range'){el.textContent='⚠ Ranging — wait for direction';el.className='align-disp ranging';}else{el.textContent=`❌ CONFLICT: 1H ${S.biasH1} vs 15M ${S.biasM15}`;el.className='align-disp conflict';}}
+function renderBiasAlignDisp(){
+  // Update auto-bias display cells
+  const h1El  = document.getElementById('auto-bias-h1-val');
+  const m15El = document.getElementById('auto-bias-m15-val');
+  const h1R   = document.getElementById('auto-bias-h1-reason');
+  const m15R  = document.getElementById('auto-bias-m15-reason');
+  if(h1El){
+    h1El.textContent = S.biasH1||'—';
+    h1El.style.color = S.biasH1==='Bull'?'var(--green)':S.biasH1==='Bear'?'var(--red)':S.biasH1==='Rng'?'var(--amber)':'var(--txt3)';
+  }
+  if(m15El){
+    m15El.textContent = S.biasM15||'—';
+    m15El.style.color = S.biasM15==='Bull'?'var(--green)':S.biasM15==='Bear'?'var(--red)':S.biasM15==='Rng'?'var(--amber)':'var(--txt3)';
+  }
+  if(h1R)  h1R.textContent  = S.biasReason1h  || 'Pending candle data';
+  if(m15R) m15R.textContent = S.biasReason15m || 'Pending candle data';
+  // Also update the override buttons to reflect current state
+  restoreBias();
+  // Alignment display
+  const el=document.getElementById('align-disp');
+  if(!el)return;
+  if(!S.biasH1||!S.biasM15){el.textContent='Waiting for auto-detection…';el.className='align-disp';return;}
+  const b=evalBiasAlign();
+  if(b===true){el.textContent=`✅ ALIGNED — Both ${S.biasH1}. Look for ${S.biasH1==='Bull'?'LONG':'SHORT'} entries.`;el.className='align-disp aligned';}
+  else if(b==='range'){el.textContent=`⚠ ${S.biasH1==='Rng'?'1H':'15M'} ranging — wait for clear direction`;el.className='align-disp ranging';}
+  else{el.textContent=`❌ CONFLICT: 1H ${S.biasH1} vs 15M ${S.biasM15} — do not trade`;el.className='align-disp conflict';}
+}
 function updateDailyLimits(){const b=S.bal||2480;['dl-1'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='$'+(b*.01).toFixed(2);});['dl-2'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='$'+(b*.02).toFixed(2);});['dl-bal','dl-c1','dl-c2'].forEach((id,i)=>{const e=document.getElementById(id);if(!e)return;if(i===0)e.textContent=b.toLocaleString();else if(i===1)e.textContent='$'+(b*.01).toFixed(2);else e.textContent='$'+(b*.02).toFixed(2);});}
 function saveSetup(){const g=id=>parseFloat(document.getElementById(id)?.value)||0;S.dt=g('s-dt');S.db=g('s-db');S.sb=g('s-sb');S.st=g('s-st');S.ifvg=g('s-ifvg');S.ob=g('s-ob');S.entry=g('s-entry');S.sl=g('s-sl');S.tp1=g('s-tp1');S.tp2=g('s-tp2');S.bal=g('s-bal')||2480;S.rsk=g('s-rsk')||1;S.setupDate=TODAY;persist();renderConditions();renderVerdict();renderGauge();renderKeyLevels();renderPhaseSummary();syncCalcUI();updateDailyLimits();document.getElementById('setup-saved-bar').style.display='block';showToast('✓ Setup saved — Dashboard updated');}
 
 /* ═══════════════════════════════════════════
    NEWS
 ═══════════════════════════════════════════ */
-function newsRowHTML(ev){return`<div class="news-row"><span class="ni-imp ${ev.impact}">${ev.impact.toUpperCase()}</span><span class="ni-name">${ev.name}</span><span class="ni-time">${ev.time||'—'} ET</span><span class="ni-del" onclick="delNews(${ev.id})">✕</span></div>`;}
+function newsRowHTML(ev){
+  const autoBadge = ev.auto ? '<span style="font-size:8px;font-family:\'IBM Plex Mono\',monospace;background:var(--bluea);border:1px solid var(--blueb);color:var(--blue);padding:1px 5px;border-radius:2px;margin-right:4px">AUTO</span>' : '';
+  return `<div class="news-row"><span class="ni-imp ${ev.impact}">${ev.impact.toUpperCase()}</span><span class="ni-name">${autoBadge}${ev.name}</span><span class="ni-time">${ev.time||'—'} ET</span><span class="ni-del" onclick="delNews('${ev.id}')">✕</span></div>`;
+}
 function renderNewsSetup(){const el=document.getElementById('news-setup-list');if(!el)return;el.innerHTML=S.news.length?S.news.map(newsRowHTML).join(''):'<div style="padding:10px 14px;font-size:11px;color:var(--txt3)">No events added</div>';}
 function renderNewsPage(){const el=document.getElementById('news-page-list');if(!el)return;el.innerHTML=S.news.length?S.news.map(newsRowHTML).join(''):'<div style="padding:12px 14px;font-size:11px;color:var(--txt3)">No events.</div>';const st=document.getElementById('news-status-txt');const hasHigh=S.news.some(e=>e.impact==='high');if(!S.news.length){st.textContent='No events added.';st.style.color='var(--txt3)';}else if(!evalNoNews()){st.innerHTML='<span style="color:var(--red)">🚨 RED NEWS WITHIN 30 MIN</span>';}else if(hasHigh){st.innerHTML=`<span style="color:var(--amber)">⚠ ${S.news.filter(e=>e.impact==='high').length} high-impact event(s) today</span>`;}else{st.innerHTML='<span style="color:var(--green)">✅ No conflict now</span>';}const badge=document.getElementById('news-badge');const cnt=S.news.filter(e=>e.impact==='high').length;if(cnt){badge.textContent=cnt;badge.classList.add('show');}else badge.classList.remove('show');}
 function addNews(pfx){const name=document.getElementById(pfx+'-n').value.trim();const time=document.getElementById(pfx+'-t').value.trim();const impact=document.getElementById(pfx+'-i').value;if(!name)return;S.news.push({name,time,impact,id:Date.now()});document.getElementById(pfx+'-n').value='';document.getElementById(pfx+'-t').value='';persist();renderNewsSetup();renderNewsPage();renderNewsAlert();renderVerdict();showToast('Event added');}
