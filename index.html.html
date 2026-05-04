@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>XAU/USD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #D4A843;
+  --gold-dim: #8A6B28;
+  --gold-glow: rgba(212,168,67,0.15);
+  --bg: #0D0C0A;
+  --bg2: #151310;
+  --bg3: #1C1A16;
+  --bg4: #242018;
+  --border: rgba(212,168,67,0.12);
+  --border2: rgba(255,255,255,0.06);
+  --text: #EDE8DC;
+  --text2: #9A9080;
+  --text3: #5A5248;
+  --green: #3DBA7E;
+  --green-bg: rgba(61,186,126,0.1);
+  --green-border: rgba(61,186,126,0.25);
+  --red: #E05C5C;
+  --red-bg: rgba(224,92,92,0.1);
+  --red-border: rgba(224,92,92,0.25);
+  --amber: #E09B3D;
+  --amber-bg: rgba(224,155,61,0.1);
+  --blue: #5B9BD5;
+  --blue-bg: rgba(91,155,213,0.1);
+  --r: 12px;
+  --r-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); }
+
+body {
+  font-family: 'Syne', sans-serif;
+  color: var(--text);
+  max-width: 430px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(13,12,10,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-left { display: flex; flex-direction: column; gap: 1px; }
+.header-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: -0.3px;
+}
+.header-sub { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.session-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.session-badge.ny { background: rgba(61,186,126,0.15); color: var(--green); border: 1px solid var(--green-border); }
+.session-badge.london { background: rgba(91,155,213,0.15); color: var(--blue); border: 1px solid rgba(91,155,213,0.3); }
+.session-badge.asia { background: rgba(90,82,72,0.3); color: var(--text3); border: 1px solid var(--border2); }
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── PRICE HERO ── */
+.price-hero {
+  background: var(--bg2);
+  margin: 12px 12px 0;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.price-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+.price-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 8px; }
+.price-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; }
+.price-main {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.price-main .price-cents { font-size: 20px; color: var(--gold); }
+.price-change {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+.price-change.up { color: var(--green); background: var(--green-bg); }
+.price-change.down { color: var(--red); background: var(--red-bg); }
+.price-change.flat { color: var(--text3); background: var(--bg4); }
+
+.price-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border2);
+}
+.price-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.price-meta-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-family: 'JetBrains Mono', monospace; }
+.price-meta-val { font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+/* ── ZONE GAUGE ── */
+.zone-gauge-wrap {
+  background: var(--bg2);
+  margin: 10px 12px 0;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+}
+.zone-gauge-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zone-gauge-title::after { content:''; flex:1; height:1px; background:var(--border2); }
+
+.gauge-bar {
+  position: relative;
+  height: 52px;
+  background: var(--bg3);
+  border-radius: 8px;
+  overflow: visible;
+  margin-bottom: 8px;
+}
+.gauge-supply {
+  position: absolute;
+  top: 0; right: 0;
+  width: 22%;
+  height: 100%;
+  background: var(--red-bg);
+  border-right: none;
+  border-radius: 0 8px 8px 0;
+  border: 1px solid var(--red-border);
+  border-left: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-demand {
+  position: absolute;
+  top: 0; left: 0;
+  width: 22%;
+  height: 100%;
+  background: var(--green-bg);
+  border-radius: 8px 0 0 8px;
+  border: 1px solid var(--green-border);
+  border-right: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-zone-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  writing-mode: horizontal-tb;
+  color: var(--text3);
+}
+.gauge-eq {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--gold);
+  opacity: 0.5;
+  transform: translateX(-50%);
+}
+.gauge-eq-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.gauge-price-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  background: var(--gold);
+  border-radius: 50%;
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 12px rgba(212,168,67,0.5);
+  transition: left 0.6s cubic-bezier(.4,0,.2,1);
+  z-index: 10;
+}
+.gauge-price-label {
+  position: absolute;
+  bottom: -20px;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--gold);
+  white-space: nowrap;
+  transition: left 0.6s cubic-bezier(.4,0,.2,1);
+}
+.gauge-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+.gauge-legend-item {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+  color: var(--text3);
+}
+.gauge-legend-item span { display: block; font-size: 8px; color: var(--text3); opacity: 0.6; margin-bottom: 1px; }
+
+/* ── BIAS PILL ── */
+.bias-row {
+  display: flex;
+  gap: 8px;
+  margin: 10px 12px 0;
+}
+.bias-card {
+  flex: 1;
+  background: var(--bg2);
+  border-radius: var(--r);
+  border: 1px solid var(--border2);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.3s;
+}
+.bias-card.bullish { border-color: var(--green-border); background: var(--green-bg); }
+.bias-card.bearish { border-color: var(--red-border); background: var(--red-bg); }
+.bias-card.neutral { border-color: var(--amber-bg); background: var(--amber-bg); }
+.bias-card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); font-weight: 600; }
+.bias-card-val { font-size: 15px; font-weight: 700; }
+.bias-card.bullish .bias-card-val { color: var(--green); }
+.bias-card.bearish .bias-card-val { color: var(--red); }
+.bias-card.neutral .bias-card-val { color: var(--amber); }
+.bias-card-sub { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* ── SECTION HEADING ── */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 6px;
+}
+.section-head-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+}
+.section-head::after { content:''; flex:1; height:1px; background:var(--border2); }
+
+/* ── LEVELS LIST ── */
+.levels-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+.level-row {
+  background: var(--bg2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border2);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+  cursor: pointer;
+  -webkit-user-select: none;
+}
+.level-row:active { background: var(--bg3); }
+.level-row.supply { border-left: 3px solid var(--red); }
+.level-row.demand { border-left: 3px solid var(--green); }
+.level-row.ifvg { border-left: 3px solid var(--gold); }
+.level-row.eq-line { border-left: 3px solid rgba(212,168,67,0.4); }
+.level-row.session-h { border-left: 3px solid var(--blue); }
+.level-row.session-l { border-left: 3px solid rgba(91,155,213,0.4); }
+.level-row.active-level { background: rgba(212,168,67,0.06); border-color: var(--border); }
+.level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.level-dot.supply { background: var(--red); }
+.level-dot.demand { background: var(--green); }
+.level-dot.ifvg { background: var(--gold); }
+.level-dot.eq-line { background: rgba(212,168,67,0.4); }
+.level-dot.session-h { background: var(--blue); }
+.level-dot.session-l { background: rgba(91,155,213,0.4); }
+.level-name { font-size: 12px; font-weight: 600; flex: 1; }
+.level-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.level-dist {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  min-width: 54px;
+  text-align: right;
+}
+.level-dist.above { color: var(--red); background: var(--red-bg); }
+.level-dist.below { color: var(--green); background: var(--green-bg); }
+.level-dist.here { color: var(--gold); background: var(--gold-glow); animation: glow-pulse 1.5s infinite; }
+@keyframes glow-pulse { 0%,100%{box-shadow:0 0 0 rgba(212,168,67,0)} 50%{box-shadow:0 0 8px rgba(212,168,67,0.3)} }
+
+/* ── CHECKLIST STRIP ── */
+.checklist-strip {
+  margin: 0 12px;
+  background: var(--bg2);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.checklist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.checklist-header-left { display: flex; align-items: center; gap: 10px; }
+.checklist-title { font-size: 13px; font-weight: 700; }
+.checklist-prog-wrap { display: flex; align-items: center; gap: 8px; }
+.checklist-prog-bar {
+  width: 80px; height: 4px;
+  background: var(--bg4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.checklist-prog-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.checklist-prog-pct { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--gold); }
+.checklist-rules { padding: 8px 8px 10px; display: flex; flex-direction: column; gap: 3px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-user-select: none;
+}
+.check-item:active { background: var(--bg4); }
+.check-item.done { opacity: 0.5; }
+.check-box {
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--border2);
+  background: var(--bg3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.check-item.done .check-box { background: var(--green); border-color: var(--green); }
+.check-tick { font-size: 10px; color: white; display: none; }
+.check-item.done .check-tick { display: block; }
+.check-text { font-size: 12px; font-weight: 500; flex: 1; line-height: 1.3; }
+.check-item.done .check-text { text-decoration: line-through; color: var(--text3); }
+.check-phase {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.phase-1 { background: rgba(91,155,213,0.15); color: var(--blue); }
+.phase-2 { background: rgba(127,119,221,0.15); color: #9B94E8; }
+.phase-3 { background: rgba(61,186,126,0.15); color: var(--green); }
+.phase-4 { background: rgba(224,155,61,0.15); color: var(--amber); }
+.phase-5 { background: rgba(224,92,92,0.15); color: var(--red); }
+.checklist-reset {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+}
+
+/* ── CALCULATOR CARD ── */
+.calc-card {
+  margin: 0 12px;
+  background: var(--bg2);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.calc-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  -webkit-user-select: none;
+}
+.calc-toggle-left { display: flex; align-items: center; gap: 10px; }
+.calc-toggle-title { font-size: 13px; font-weight: 700; }
+.calc-toggle-sub { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.calc-chevron { font-size: 11px; color: var(--text3); transition: transform 0.2s; }
+.calc-chevron.open { transform: rotate(180deg); }
+.calc-body { display: none; padding: 0 12px 14px; border-top: 1px solid var(--border2); }
+.calc-body.open { display: block; }
+
+.calc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.calc-field { display: flex; flex-direction: column; gap: 4px; }
+.calc-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.calc-input {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+  transition: border-color 0.2s;
+}
+.calc-input:focus { border-color: var(--gold); }
+.calc-select {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  appearance: none;
+}
+.calc-go {
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--gold);
+  color: #0D0C0A;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  margin-top: 10px;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s;
+}
+.calc-go:active { opacity: 0.8; }
+.calc-results { display: none; margin-top: 10px; }
+.calc-results.open { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.calc-result-box {
+  background: var(--bg3);
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  padding: 10px 12px;
+}
+.calc-result-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+.calc-result-val { font-size: 17px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+.calc-result-val.good { color: var(--green); }
+.calc-result-val.bad { color: var(--red); }
+.calc-result-val.warn { color: var(--amber); }
+.calc-result-val.neu { color: var(--text); }
+.calc-verdict {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.calc-verdict.good { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+.calc-verdict.warn { background: var(--amber-bg); border: 1px solid rgba(224,155,61,0.3); color: var(--amber); }
+.calc-verdict.bad { background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); }
+
+/* ── NEWS STRIP ── */
+.news-strip {
+  margin: 0 12px;
+  background: var(--bg2);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.news-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.news-header-left { display: flex; align-items: center; gap: 8px; }
+.news-header-title { font-size: 13px; font-weight: 700; }
+.news-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.news-status.clear { background: var(--green-bg); color: var(--green); }
+.news-status.warning { background: var(--red-bg); color: var(--red); animation: glow-pulse 1s infinite; }
+.news-add-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+}
+.news-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.news-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  background: var(--bg3);
+  position: relative;
+}
+.news-impact { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+.news-impact.high { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.news-impact.med { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(224,155,61,0.3); }
+.news-name { font-size: 12px; font-weight: 600; flex: 1; }
+.news-time { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text3); flex-shrink: 0; }
+.news-del { font-size: 14px; color: var(--text3); cursor: pointer; padding: 4px; }
+
+/* ── GOLDEN RULES ── */
+.rules-list { padding: 0 12px; display: flex; flex-direction: column; gap: 5px; }
+.rule-item {
+  background: var(--bg2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border2);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  -webkit-user-select: none;
+}
+.rule-item:active { background: var(--bg3); }
+.rule-item.checked { opacity: 0.45; }
+.rule-item.checked .rule-text { text-decoration: line-through; color: var(--text3); }
+.rule-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold-dim); font-weight: 600; width: 18px; flex-shrink: 0; }
+.rule-text { font-size: 12px; font-weight: 500; flex: 1; line-height: 1.35; }
+.rule-check-box {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.rule-item.checked .rule-check-box { background: var(--green); border-color: var(--green); }
+.rule-check-tick { font-size: 10px; color: white; display: none; }
+.rule-item.checked .rule-check-tick { display: block; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: rgba(13,12,10,0.96);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 12px;
+  display: flex;
+  z-index: 200;
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-btn:active { opacity: 0.6; }
+.nav-icon { font-size: 18px; line-height: 1; }
+.nav-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-family: 'Syne', sans-serif; }
+.nav-btn.active .nav-label { color: var(--gold); }
+.nav-btn.active .nav-icon { filter: drop-shadow(0 0 4px rgba(212,168,67,0.6)); }
+
+/* ── PAGES ── */
+.page { display: none; padding-bottom: 8px; }
+.page.active { display: block; }
+
+/* ── ADD LEVEL MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  width: 100%;
+  max-width: 430px;
+  padding: 20px 20px 32px;
+  animation: slide-up 0.25s ease;
+}
+@keyframes slide-up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-handle { width: 36px; height: 4px; background: var(--bg4); border-radius: 2px; margin: 0 auto 18px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.modal-field { display: flex; flex-direction: column; gap: 4px; }
+.modal-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.modal-input {
+  padding: 11px 12px;
+  font-size: 15px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 9px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.modal-input:focus { border-color: var(--gold); }
+.modal-select {
+  padding: 11px 12px;
+  font-size: 14px;
+  font-family: 'Syne', sans-serif;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 9px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  appearance: none;
+}
+.modal-full { grid-column: 1 / -1; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-cancel {
+  flex: 1;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--bg3);
+  color: var(--text3);
+  border: 1px solid var(--border2);
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+}
+.modal-save {
+  flex: 2;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--gold);
+  color: #0D0C0A;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+}
+
+/* ── JOURNAL PAGE ── */
+.journal-form-card {
+  margin: 0 12px;
+  background: var(--bg2);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.j-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.j-field { display: flex; flex-direction: column; gap: 4px; }
+.j-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.j-input, .j-select, .j-textarea {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Syne', sans-serif;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.j-input:focus, .j-select:focus, .j-textarea:focus { border-color: var(--gold); }
+.j-textarea { resize: none; min-height: 70px; font-size: 12px; }
+.j-full { grid-column: 1 / -1; }
+.j-save {
+  width: 100%;
+  padding: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  margin-top: 4px;
+}
+.j-saved { font-size: 11px; color: var(--green); text-align: center; margin-top: 6px; display: none; }
+.j-log-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); padding: 0 12px; margin-top: 14px; margin-bottom: 6px; }
+.j-entries { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+.j-entry {
+  background: var(--bg2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border2);
+  padding: 12px 14px;
+}
+.j-entry-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; flex-wrap: wrap; gap: 5px; }
+.j-entry-meta { font-size: 12px; font-weight: 600; }
+.j-outcome {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.j-outcome.win { background: var(--green-bg); color: var(--green); }
+.j-outcome.loss { background: var(--red-bg); color: var(--red); }
+.j-outcome.be { background: var(--amber-bg); color: var(--amber); }
+.j-entry-notes { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.j-entry-notes strong { color: var(--text2); }
+.j-empty { text-align: center; padding: 30px 20px; color: var(--text3); font-size: 13px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 0; }
+
+/* ── ANIMATE IN ── */
+.page.active > * {
+  animation: fade-up 0.3s ease both;
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── ADD NEWS MODAL ── */
+.news-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.news-modal-overlay.open { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">XAU / USD</div>
+    <div class="header-sub" id="header-time">Loading...</div>
+  </div>
+  <div class="header-right">
+    <span class="session-badge" id="session-badge">...</span>
+    <div class="live-dot"></div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: DASHBOARD ═══════════ -->
+<div class="page active" id="page-dashboard">
+
+  <!-- PRICE HERO -->
+  <div class="price-hero">
+    <div class="price-row">
+      <div>
+        <div class="price-label">Current Price</div>
+        <div class="price-main" id="hero-price">—</div>
+      </div>
+      <div style="text-align:right">
+        <div class="price-label">Change</div>
+        <div class="price-change flat" id="hero-change">—</div>
+      </div>
+    </div>
+    <div class="price-meta">
+      <div class="price-meta-item">
+        <div class="price-meta-label">Spread</div>
+        <div class="price-meta-val" id="meta-spread" style="color:var(--green)">—</div>
+      </div>
+      <div class="price-meta-item">
+        <div class="price-meta-label">EQ</div>
+        <div class="price-meta-val" id="meta-eq" style="color:var(--gold)">—</div>
+      </div>
+      <div class="price-meta-item">
+        <div class="price-meta-label">vs EQ</div>
+        <div class="price-meta-val" id="meta-vs-eq">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE GAUGE -->
+  <div class="zone-gauge-wrap">
+    <div class="zone-gauge-title">Position in Range</div>
+    <div class="gauge-bar" id="gauge-bar">
+      <div class="gauge-demand" id="gauge-demand-zone"><div class="gauge-zone-label">Demand</div></div>
+      <div class="gauge-supply" id="gauge-supply-zone"><div class="gauge-zone-label">Supply</div></div>
+      <div class="gauge-eq" id="gauge-eq-line" style="left:50%">
+        <div class="gauge-eq-label">EQ</div>
+      </div>
+      <div class="gauge-price-marker" id="gauge-marker" style="left:50%"></div>
+      <div class="gauge-price-label" id="gauge-price-label" style="left:50%">—</div>
+    </div>
+    <div class="gauge-legend" id="gauge-legend">
+      <div class="gauge-legend-item" style="color:var(--green)"><span>DEMAND</span>—</div>
+      <div class="gauge-legend-item" style="color:var(--gold)"><span>EQ</span>—</div>
+      <div class="gauge-legend-item" style="color:var(--red)"><span>SUPPLY</span>—</div>
+    </div>
+  </div>
+
+  <!-- BIAS CARDS -->
+  <div class="bias-row" id="bias-row">
+    <div class="bias-card neutral" id="bias-h1">
+      <div class="bias-card-label">1H Bias</div>
+      <div class="bias-card-val">—</div>
+      <div class="bias-card-sub">set below</div>
+    </div>
+    <div class="bias-card neutral" id="bias-15m">
+      <div class="bias-card-label">15M Bias</div>
+      <div class="bias-card-val">—</div>
+      <div class="bias-card-sub">set below</div>
+    </div>
+    <div class="bias-card neutral" id="bias-align">
+      <div class="bias-card-label">Align</div>
+      <div class="bias-card-val">—</div>
+      <div class="bias-card-sub">1H + 15M</div>
+    </div>
+  </div>
+
+  <!-- KEY LEVELS -->
+  <div class="section-head">
+    <div class="section-head-title">Key Levels</div>
+    <button onclick="openLevelModal()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--gold);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700">+ Add</button>
+  </div>
+  <div class="levels-list" id="levels-list"></div>
+
+</div><!-- end page-dashboard -->
+
+<!-- ═══════════ PAGE: SETUP ═══════════ -->
+<div class="page" id="page-setup">
+
+  <!-- Bias Selector -->
+  <div class="section-head"><div class="section-head-title">Set Your Bias</div></div>
+  <div style="padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">1H Bias</div>
+      <div style="display:flex;gap:6px">
+        <button class="bias-btn" data-tf="h1" data-val="Bullish" onclick="setBias('h1','Bullish',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--green-border);background:transparent;color:var(--green);cursor:pointer;font-family:'Syne',sans-serif">Bull ↑</button>
+        <button class="bias-btn" data-tf="h1" data-val="Bearish" onclick="setBias('h1','Bearish',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--red-border);background:transparent;color:var(--red);cursor:pointer;font-family:'Syne',sans-serif">Bear ↓</button>
+        <button class="bias-btn" data-tf="h1" data-val="Ranging" onclick="setBias('h1','Ranging',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif">Range</button>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">15M Bias</div>
+      <div style="display:flex;gap:6px">
+        <button class="bias-btn" data-tf="m15" data-val="Bullish" onclick="setBias('m15','Bullish',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--green-border);background:transparent;color:var(--green);cursor:pointer;font-family:'Syne',sans-serif">Bull ↑</button>
+        <button class="bias-btn" data-tf="m15" data-val="Bearish" onclick="setBias('m15','Bearish',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--red-border);background:transparent;color:var(--red);cursor:pointer;font-family:'Syne',sans-serif">Bear ↓</button>
+        <button class="bias-btn" data-tf="m15" data-val="Ranging" onclick="setBias('m15','Ranging',this)" style="flex:1;padding:8px 4px;font-size:11px;font-weight:700;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif">Range</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price Inputs -->
+  <div class="section-head"><div class="section-head-title">Today's Reference Prices</div></div>
+  <div style="padding:0 12px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="calc-field"><label class="calc-label">1H High</label><input class="calc-input" id="inp-high" type="number" placeholder="4660" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">1H Low</label><input class="calc-input" id="inp-low" type="number" placeholder="4550" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">Demand Zone Top</label><input class="calc-input" id="inp-demand-top" type="number" placeholder="4601" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">Demand Zone Bot</label><input class="calc-input" id="inp-demand-bot" type="number" placeholder="4550" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">Supply Zone Bot</label><input class="calc-input" id="inp-supply-bot" type="number" placeholder="4645" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">Supply Zone Top</label><input class="calc-input" id="inp-supply-top" type="number" placeholder="4665" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">IFVG Level</label><input class="calc-input" id="inp-ifvg" type="number" placeholder="4615" onchange="recalcLevels()"></div>
+        <div class="calc-field"><label class="calc-label">Current Price</label><input class="calc-input" id="inp-price" type="number" placeholder="4612.15" onchange="recalcLevels()"></div>
+      </div>
+      <button class="calc-go" onclick="recalcLevels()">Update Dashboard</button>
+    </div>
+  </div>
+
+  <!-- Pre-Session Checklist -->
+  <div class="section-head" style="margin-top:14px"><div class="section-head-title">Pre-Session Checklist</div></div>
+  <div class="checklist-strip" style="margin-top:0">
+    <div class="checklist-header">
+      <div class="checklist-header-left">
+        <div class="checklist-title">Daily Steps</div>
+      </div>
+      <div class="checklist-prog-wrap">
+        <div class="checklist-prog-bar"><div class="checklist-prog-fill" id="cl-fill-setup"></div></div>
+        <span class="checklist-prog-pct" id="cl-pct-setup">0%</span>
+        <button class="checklist-reset" onclick="resetChecklist('setup')">Reset</button>
+      </div>
+    </div>
+    <div class="checklist-rules" id="cl-setup"></div>
+  </div>
+
+</div><!-- end page-setup -->
+
+<!-- ═══════════ PAGE: CALCULATOR ═══════════ -->
+<div class="page" id="page-calc">
+
+  <div class="section-head"><div class="section-head-title">Risk & R:R Calculator</div></div>
+  <div style="padding:0 12px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+      <div class="calc-grid-2">
+        <div class="calc-field"><label class="calc-label">Balance (USC)</label><input class="calc-input" id="rc-bal" type="number" value="2480"></div>
+        <div class="calc-field"><label class="calc-label">Risk %</label><input class="calc-input" id="rc-risk" type="number" value="1" step="0.5"></div>
+        <div class="calc-field"><label class="calc-label">Entry</label><input class="calc-input" id="rc-entry" type="number" placeholder="4605"></div>
+        <div class="calc-field"><label class="calc-label">Stop Loss</label><input class="calc-input" id="rc-sl" type="number" placeholder="4598"></div>
+        <div class="calc-field"><label class="calc-label">TP1</label><input class="calc-input" id="rc-tp1" type="number" placeholder="4618"></div>
+        <div class="calc-field"><label class="calc-label">TP2</label><input class="calc-input" id="rc-tp2" type="number" placeholder="4650"></div>
+        <div class="calc-field"><label class="calc-label">Direction</label>
+          <select class="calc-select" id="rc-dir">
+            <option value="long">Long (Buy)</option>
+            <option value="short">Short (Sell)</option>
+          </select>
+        </div>
+        <div class="calc-field"><label class="calc-label">Spread (pts)</label><input class="calc-input" id="rc-spread" type="number" value="0.28" step="0.01"></div>
+      </div>
+      <button class="calc-go" onclick="doCalc()">Calculate</button>
+      <div class="calc-results" id="rc-results">
+        <div class="calc-result-box"><div class="calc-result-label">Max Risk $</div><div class="calc-result-val bad" id="rc-maxrisk">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">SL Distance</div><div class="calc-result-val neu" id="rc-sldist">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">R:R to TP1</div><div class="calc-result-val" id="rc-rr1">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">R:R to TP2</div><div class="calc-result-val" id="rc-rr2">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">Profit at TP1</div><div class="calc-result-val good" id="rc-p1">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">Profit at TP2</div><div class="calc-result-val good" id="rc-p2">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">Spread Cost</div><div class="calc-result-val warn" id="rc-sc">—</div></div>
+        <div class="calc-result-box"><div class="calc-result-label">TP1 Net</div><div class="calc-result-val good" id="rc-p1n">—</div></div>
+        <div class="calc-verdict" id="rc-verdict">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rules reminder inside calc page -->
+  <div class="section-head" style="margin-top:14px"><div class="section-head-title">Trade Rules Checklist</div></div>
+  <div class="rules-list" id="rules-list"></div>
+
+</div><!-- end page-calc -->
+
+<!-- ═══════════ PAGE: NEWS ═══════════ -->
+<div class="page" id="page-news">
+
+  <div class="section-head"><div class="section-head-title">Today's News Events</div></div>
+  <div class="news-strip" style="margin:0 12px">
+    <div class="news-header">
+      <div class="news-header-left">
+        <div class="news-header-title">Events</div>
+        <div class="news-status clear" id="news-overall-status">Clear</div>
+      </div>
+      <button class="news-add-btn" onclick="openNewsModal()">+ Add</button>
+    </div>
+    <div class="news-list" id="news-list"></div>
+  </div>
+
+  <div class="section-head" style="margin-top:14px"><div class="section-head-title">Avoid Trading</div></div>
+  <div style="padding:0 12px;display:flex;flex-direction:column;gap:6px">
+    <div style="background:var(--bg2);border:1px solid var(--red-border);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6">
+      <strong style="color:var(--red)">30 min before AND after</strong> any red (HIGH) news event.<br>
+      NFP, CPI, FOMC, Fed speeches — gold can spike 100+ pts in seconds. Your SL can't protect you in time.
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.6">
+      📅 Add events to this page every morning after checking <strong style="color:var(--text2)">Forexfactory.com</strong> or <strong style="color:var(--text2)">Investing.com</strong>
+    </div>
+  </div>
+
+</div><!-- end page-news -->
+
+<!-- ═══════════ PAGE: JOURNAL ═══════════ -->
+<div class="page" id="page-journal">
+
+  <div class="section-head"><div class="section-head-title">Log a Trade</div></div>
+  <div class="journal-form-card">
+    <div class="j-grid">
+      <div class="j-field"><label class="j-label">Date</label><input class="j-input" id="jf-date" type="text"></div>
+      <div class="j-field"><label class="j-label">Session</label>
+        <select class="j-select" id="jf-session"><option>New York</option><option>London</option><option>Asia</option><option>Overlap</option></select>
+      </div>
+      <div class="j-field"><label class="j-label">Direction</label>
+        <select class="j-select" id="jf-dir"><option>Long (Buy)</option><option>Short (Sell)</option></select>
+      </div>
+      <div class="j-field"><label class="j-label">Outcome</label>
+        <select class="j-select" id="jf-outcome">
+          <option>Win — TP1</option><option>Win — TP2</option><option>Win — TP1+TP2</option>
+          <option>Breakeven</option><option>Loss — SL hit</option><option>No trade</option>
+        </select>
+      </div>
+      <div class="j-field"><label class="j-label">Entry</label><input class="j-input" id="jf-entry" type="number" placeholder="4605"></div>
+      <div class="j-field"><label class="j-label">Exit</label><input class="j-input" id="jf-exit" type="number" placeholder="4618"></div>
+      <div class="j-field j-full"><label class="j-label">Setup — what did you see?</label><textarea class="j-textarea" id="jf-setup" placeholder="e.g. 5M IFVG inside 15M demand zone. Both TFs bullish. 1M hammer at 4605."></textarea></div>
+      <div class="j-field j-full"><label class="j-label">Lesson learned</label><textarea class="j-textarea" id="jf-lesson" rows="2" placeholder="e.g. Waited patiently — paid off. Don't exit early at TP1 next time."></textarea></div>
+    </div>
+    <button class="j-save" onclick="saveJournalEntry()">Save Entry</button>
+    <div class="j-saved" id="jf-saved">✓ Saved!</div>
+  </div>
+
+  <div class="j-log-title">Trade Log <span id="j-count" style="color:var(--text3)"></span></div>
+  <div class="j-entries" id="j-entries">
+    <div class="j-empty">📓 No entries yet. Log your first trade above.</div>
+  </div>
+
+</div><!-- end page-journal -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('dashboard',this)" id="nav-dashboard">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Dashboard</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('setup',this)" id="nav-setup">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Setup</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('calc',this)" id="nav-calc">
+    <span class="nav-icon">#</span>
+    <span class="nav-label">Calc</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('news',this)" id="nav-news">
+    <span class="nav-icon">📅</span>
+    <span class="nav-label">News</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('journal',this)" id="nav-journal">
+    <span class="nav-icon">📓</span>
+    <span class="nav-label">Journal</span>
+  </button>
+</nav>
+
+<!-- ADD LEVEL MODAL -->
+<div class="modal-overlay" id="level-modal" onclick="closeLevelModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Key Level</div>
+    <div class="modal-grid">
+      <div class="modal-field modal-full">
+        <label class="modal-label">Level Name</label>
+        <input class="modal-input" id="ml-name" placeholder="e.g. 15M OB, Previous High, IFVG">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Price</label>
+        <input class="modal-input" id="ml-price" type="number" placeholder="4615">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Type</label>
+        <select class="modal-select" id="ml-type">
+          <option value="ifvg">IFVG</option>
+          <option value="demand">Demand Zone</option>
+          <option value="supply">Supply Zone</option>
+          <option value="session-h">Session High</option>
+          <option value="session-l">Session Low</option>
+          <option value="eq-line">EQ / Midpoint</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeLevelModal()">Cancel</button>
+      <button class="modal-save" onclick="saveLevelModal()">Add Level</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD NEWS MODAL -->
+<div class="news-modal-overlay" id="news-modal" onclick="closeNewsModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add News Event</div>
+    <div class="modal-grid">
+      <div class="modal-field modal-full">
+        <label class="modal-label">Event Name</label>
+        <input class="modal-input" id="nm-name" placeholder="e.g. NFP, CPI, FOMC">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Time (ET)</label>
+        <input class="modal-input" id="nm-time" placeholder="8:30 AM">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Impact</label>
+        <select class="modal-select" id="nm-impact">
+          <option value="high">HIGH 🔴</option>
+          <option value="med">MEDIUM 🟡</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeNewsModal()">Cancel</button>
+      <button class="modal-save" onclick="saveNewsModal()">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let state = {
+  price: 4612.15,
+  high: 4660,
+  low: 4550,
+  eq: 4605,
+  demandTop: 4601,
+  demandBot: 4550,
+  supplyBot: 4645,
+  supplyTop: 4665,
+  ifvg: 4615,
+  spread: 0.28,
+  bias: { h1: null, m15: null },
+  levels: [],
+  newsEvents: [],
+  checklists: { setup: {}, rules: {} },
+  journal: []
+};
+
+// Load from localStorage if available
+try {
+  const saved = localStorage.getItem('xauusd_state');
+  if (saved) { const s = JSON.parse(saved); Object.assign(state, s); }
+} catch(e) {}
+
+function saveState() {
+  try { localStorage.setItem('xauusd_state', JSON.stringify(state)); } catch(e) {}
+}
+
+// ── PAGES ──
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── CLOCK & SESSION ──
+function updateClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('header-time').textContent = timeStr;
+  // Determine session (ET offset = UTC - 4 or -5)
+  const etOffset = -4; // EDT (May)
+  const etH = (now.getUTCHours() + etOffset + 24) % 24;
+  let session = 'Asia', cls = 'asia';
+  if (etH >= 3 && etH < 8) { session = 'London'; cls = 'london'; }
+  else if (etH >= 8 && etH < 12) { session = 'NY/London'; cls = 'ny'; }
+  else if (etH >= 8 && etH < 17) { session = 'New York'; cls = 'ny'; }
+  const badge = document.getElementById('session-badge');
+  badge.textContent = session;
+  badge.className = 'session-badge ' + cls;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── PRICE DISPLAY ──
+function formatPrice(p) {
+  if (!p) return '—';
+  const s = p.toFixed(2);
+  const parts = s.split('.');
+  return parts[0] + '.' + '<span class="price-cents">' + parts[1] + '</span>';
+}
+
+function updatePriceDisplay() {
+  const p = state.price;
+  const el = document.getElementById('hero-price');
+  el.innerHTML = p ? formatPrice(p) : '—';
+  // Spread display
+  document.getElementById('meta-spread').textContent = state.spread ? state.spread.toFixed(2) + ' pts' : '—';
+  // EQ display
+  document.getElementById('meta-eq').textContent = state.eq ? state.eq.toFixed(2) : '—';
+  // vs EQ
+  const vsEq = document.getElementById('meta-vs-eq');
+  if (p && state.eq) {
+    const diff = (p - state.eq).toFixed(2);
+    vsEq.textContent = (diff > 0 ? '+' : '') + diff;
+    vsEq.style.color = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text3)';
+  }
+}
+
+// ── GAUGE ──
+function updateGauge() {
+  const p = state.price, lo = state.demandBot, hi = state.supplyTop, eq = state.eq;
+  if (!p || !lo || !hi) return;
+  const range = hi - lo;
+  const pct = Math.max(3, Math.min(97, ((p - lo) / range) * 100));
+  const eqPct = Math.max(3, Math.min(97, ((eq - lo) / range) * 100));
+  document.getElementById('gauge-marker').style.left = pct + '%';
+  document.getElementById('gauge-price-label').style.left = pct + '%';
+  document.getElementById('gauge-price-label').textContent = p.toFixed(2);
+  document.getElementById('gauge-eq-line').style.left = eqPct + '%';
+  // Legend
+  const leg = document.getElementById('gauge-legend');
+  leg.innerHTML = `
+    <div class="gauge-legend-item" style="color:var(--green)"><span>DEMAND</span>${state.demandBot}–${state.demandTop}</div>
+    <div class="gauge-legend-item" style="color:var(--gold)"><span>EQ</span>${eq.toFixed(1)}</div>
+    <div class="gauge-legend-item" style="color:var(--red)"><span>SUPPLY</span>${state.supplyBot}–${state.supplyTop}</div>`;
+}
+
+// ── LEVELS ──
+function updateLevelsDisplay() {
+  const p = state.price;
+  const allLevels = [
+    { name: 'Supply Zone Top', price: state.supplyTop, type: 'supply' },
+    { name: 'Supply Zone Bot', price: state.supplyBot, type: 'supply' },
+    { name: 'IFVG Level', price: state.ifvg, type: 'ifvg' },
+    { name: 'EQ Midpoint', price: state.eq, type: 'eq-line' },
+    { name: 'Demand Zone Top', price: state.demandTop, type: 'demand' },
+    { name: 'Demand Zone Bot', price: state.demandBot, type: 'demand' },
+    ...state.levels
+  ].filter(l => l.price).sort((a, b) => b.price - a.price);
+
+  const container = document.getElementById('levels-list');
+  if (!allLevels.length) { container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Go to Setup tab to enter your levels →</div>'; return; }
+
+  container.innerHTML = allLevels.map((l, i) => {
+    const dist = p ? (l.price - p) : null;
+    const isClose = dist !== null && Math.abs(dist) < 5;
+    let distHtml = '';
+    if (dist !== null) {
+      if (Math.abs(dist) < 1) distHtml = `<span class="level-dist here">HERE</span>`;
+      else if (dist > 0) distHtml = `<span class="level-dist above">+${dist.toFixed(1)}</span>`;
+      else distHtml = `<span class="level-dist below">${dist.toFixed(1)}</span>`;
+    }
+    const del = state.levels.includes(l) ? `<span onclick="deleteLevel(${state.levels.indexOf(l)});event.stopPropagation()" style="font-size:14px;color:var(--text3);padding:4px 6px;cursor:pointer">✕</span>` : '';
+    return `<div class="level-row ${l.type} ${isClose ? 'active-level' : ''}" onclick="">
+      <div class="level-dot ${l.type}"></div>
+      <div class="level-name">${l.name}</div>
+      <div class="level-price">${l.price.toFixed(2)}</div>
+      ${distHtml}${del}
+    </div>`;
+  }).join('');
+}
+
+// ── BIAS ──
+function updateBiasDisplay() {
+  const h1 = state.bias.h1, m15 = state.bias.m15;
+  function biasClass(val) { return val === 'Bullish' ? 'bullish' : val === 'Bearish' ? 'bearish' : 'neutral'; }
+  function biasIcon(val) { return val === 'Bullish' ? '↑ Bullish' : val === 'Bearish' ? '↓ Bearish' : val === 'Ranging' ? '→ Ranging' : '—'; }
+  const h1Card = document.getElementById('bias-h1');
+  h1Card.className = 'bias-card ' + biasClass(h1);
+  h1Card.innerHTML = `<div class="bias-card-label">1H Bias</div><div class="bias-card-val">${biasIcon(h1)}</div><div class="bias-card-sub">${h1 ? '1-hour TF' : 'tap Setup'}</div>`;
+  const m15Card = document.getElementById('bias-15m');
+  m15Card.className = 'bias-card ' + biasClass(m15);
+  m15Card.innerHTML = `<div class="bias-card-label">15M Bias</div><div class="bias-card-val">${biasIcon(m15)}</div><div class="bias-card-sub">${m15 ? '15-min TF' : 'tap Setup'}</div>`;
+  const alignCard = document.getElementById('bias-align');
+  let alignClass = 'neutral', alignVal = '—', alignSub = 'set both';
+  if (h1 && m15) {
+    if (h1 === m15 && h1 !== 'Ranging') {
+      alignClass = 'bullish'; alignVal = '✓ Aligned'; alignSub = h1 === 'Bullish' ? 'Long setups' : 'Short setups';
+    } else if (h1 === 'Ranging' || m15 === 'Ranging') {
+      alignClass = 'neutral'; alignVal = '⚠ Ranging'; alignSub = 'Wait for clarity';
+    } else {
+      alignClass = 'bearish'; alignVal = '✗ No Trade'; alignSub = 'Wait for align';
+    }
+  }
+  alignCard.className = 'bias-card ' + alignClass;
+  alignCard.innerHTML = `<div class="bias-card-label">Align</div><div class="bias-card-val">${alignVal}</div><div class="bias-card-sub">${alignSub}</div>`;
+}
+
+function setBias(tf, val, btn) {
+  state.bias[tf] = val;
+  // Update button active states
+  document.querySelectorAll(`.bias-btn[data-tf="${tf}"]`).forEach(b => {
+    b.style.fontWeight = '700';
+    if (b.dataset.val === val) {
+      if (val === 'Bullish') { b.style.background = 'var(--green-bg)'; b.style.borderColor = 'var(--green)'; }
+      else if (val === 'Bearish') { b.style.background = 'var(--red-bg)'; b.style.borderColor = 'var(--red)'; }
+      else { b.style.background = 'var(--amber-bg)'; b.style.borderColor = 'var(--amber)'; }
+    } else {
+      b.style.background = 'transparent';
+    }
+  });
+  updateBiasDisplay(); saveState();
+}
+
+// ── RECALC ──
+function recalcLevels() {
+  const get = id => parseFloat(document.getElementById(id).value) || 0;
+  state.high = get('inp-high') || state.high;
+  state.low = get('inp-low') || state.low;
+  state.demandTop = get('inp-demand-top') || state.demandTop;
+  state.demandBot = get('inp-demand-bot') || state.demandBot;
+  state.supplyBot = get('inp-supply-bot') || state.supplyBot;
+  state.supplyTop = get('inp-supply-top') || state.supplyTop;
+  state.ifvg = get('inp-ifvg') || state.ifvg;
+  state.price = get('inp-price') || state.price;
+  if (state.high && state.low) state.eq = parseFloat(((state.high + state.low) / 2).toFixed(2));
+  refreshAll(); saveState();
+}
+
+function refreshAll() {
+  updatePriceDisplay();
+  updateGauge();
+  updateLevelsDisplay();
+  updateBiasDisplay();
+}
+
+// ── SETUP INPUTS ──
+function syncSetupInputs() {
+  const fields = { 'inp-high': state.high, 'inp-low': state.low, 'inp-demand-top': state.demandTop, 'inp-demand-bot': state.demandBot, 'inp-supply-bot': state.supplyBot, 'inp-supply-top': state.supplyTop, 'inp-ifvg': state.ifvg, 'inp-price': state.price };
+  Object.entries(fields).forEach(([id, val]) => { if (val && document.getElementById(id)) document.getElementById(id).value = val || ''; });
+}
+
+// ── CHECKLISTS ──
+const checklistItems = {
+  setup: [
+    { id: 'cl-1', text: 'Check economic calendar for red news events today', phase: 1 },
+    { id: 'cl-2', text: 'Open 1H chart — mark today\'s high and low', phase: 1 },
+    { id: 'cl-3', text: 'Calculate and draw the EQ (high + low ÷ 2)', phase: 1 },
+    { id: 'cl-4', text: 'Mark previous session high, low, close', phase: 1 },
+    { id: 'cl-5', text: 'Identify open FVGs on 1H chart', phase: 1 },
+    { id: 'cl-6', text: 'Decide today\'s bias: Bull, Bear, or Ranging', phase: 1 },
+    { id: 'cl-7', text: '15M trend matches 1H bias? (alignment check)', phase: 2 },
+    { id: 'cl-8', text: 'Find most recent 15M Order Block in bias direction', phase: 2 },
+    { id: 'cl-9', text: 'Is price approaching a 15M FVG or IFVG zone?', phase: 2 },
+    { id: 'cl-10', text: 'Mark 15M demand zone (longs) or supply zone (shorts)', phase: 2 },
+    { id: 'cl-11', text: 'Confirm price is NOT in no-man\'s land', phase: 2 },
+    { id: 'cl-12', text: 'Price returned to your 15M zone — no chasing', phase: 3 },
+    { id: 'cl-13', text: '5M FVG forming inside the zone (IFVG watch)', phase: 3 },
+    { id: 'cl-14', text: 'IFVG confirmed: broke through FVG then returned', phase: 3 },
+    { id: 'cl-15', text: '1M confirmation candle (engulf/hammer/displacement)', phase: 3 },
+    { id: 'cl-16', text: 'Spread below 0.50 pts before entering', phase: 3 },
+    { id: 'cl-17', text: 'SL placed outside the IFVG zone (1–2pt buffer)', phase: 3 },
+    { id: 'cl-18', text: 'R:R is at least 1:1.5 — verified in calculator', phase: 3 },
+    { id: 'cl-19', text: 'Move SL to breakeven once price hits TP1', phase: 4 },
+    { id: 'cl-20', text: 'Take partial profit at TP1 (close 50%+)', phase: 4 },
+    { id: 'cl-21', text: 'Check path to TP2 — any blocking zones?', phase: 4 },
+    { id: 'cl-22', text: 'Did NOT add to a losing position', phase: 4 },
+    { id: 'cl-23', text: 'Closed before news if still open', phase: 4 },
+    { id: 'cl-24', text: 'Trade logged in journal', phase: 5 },
+    { id: 'cl-25', text: 'Screenshot taken (entry + exit, labeled)', phase: 5 },
+    { id: 'cl-26', text: 'Discipline review: did I follow the plan?', phase: 5 },
+    { id: 'cl-27', text: 'P&L checked vs daily max loss (2% = $49.60)', phase: 5 },
+  ]
+};
+
+const rulesData = [
+  'Never trade without 1H + 15M alignment',
+  'Max 3 trades/day. Stop after 2 losses.',
+  'Risk only 1–2% per trade ($24–49 on this account)',
+  'No trades 30 min before/after red news',
+  'Only enter AT zones — never mid-range',
+  'SL moves toward breakeven only — never away',
+  'Minimum 1:1.5 R:R on every trade'
+];
+
+function renderChecklist(listId) {
+  const items = checklistItems[listId];
+  const container = document.getElementById('cl-' + listId);
+  if (!container) return;
+  container.innerHTML = items.map(item => {
+    const done = state.checklists[listId][item.id];
+    return `<div class="check-item ${done ? 'done' : ''}" id="chk-${item.id}" onclick="toggleCheck('${listId}','${item.id}')">
+      <div class="check-box"><span class="check-tick">✓</span></div>
+      <div class="check-text">${item.text}</div>
+      <span class="check-phase phase-${item.phase}">P${item.phase}</span>
+    </div>`;
+  }).join('');
+  updateChecklistProgress(listId);
+}
+
+function renderRules() {
+  const container = document.getElementById('rules-list');
+  if (!container) return;
+  container.innerHTML = rulesData.map((r, i) => {
+    const done = state.checklists.rules['r' + i];
+    return `<div class="rule-item ${done ? 'checked' : ''}" onclick="toggleCheck('rules','r${i}')">
+      <span class="rule-num">R${i + 1}</span>
+      <span class="rule-text">${r}</span>
+      <div class="rule-check-box"><span class="rule-check-tick">✓</span></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCheck(list, id) {
+  state.checklists[list][id] = !state.checklists[list][id];
+  if (list === 'rules') { renderRules(); return; }
+  renderChecklist(list);
+  saveState();
+}
+
+function updateChecklistProgress(listId) {
+  const items = checklistItems[listId];
+  const done = items.filter(i => state.checklists[listId][i.id]).length;
+  const pct = Math.round(done / items.length * 100);
+  const fill = document.getElementById('cl-fill-' + listId);
+  const pctEl = document.getElementById('cl-pct-' + listId);
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+function resetChecklist(list) {
+  state.checklists[list] = {};
+  renderChecklist(list);
+  saveState();
+}
+
+// ── CALCULATOR ──
+function doCalc() {
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+  const bal = g('rc-bal'), rp = g('rc-risk'), entry = g('rc-entry'), sl = g('rc-sl'), tp1 = g('rc-tp1'), tp2 = g('rc-tp2'), spread = g('rc-spread');
+  if (!entry || !sl || !tp1) return;
+  const maxRisk = bal * rp / 100;
+  const slDist = Math.abs(entry - sl);
+  const tp1Dist = Math.abs(tp1 - entry);
+  const tp2Dist = Math.abs(tp2 - entry);
+  const rr1 = slDist ? tp1Dist / slDist : 0;
+  const rr2 = slDist ? tp2Dist / slDist : 0;
+  const lots = slDist ? maxRisk / slDist : 0;
+  const p1 = tp1Dist * lots, p2 = tp2Dist * lots, sc = spread * lots;
+  document.getElementById('rc-maxrisk').textContent = '$' + maxRisk.toFixed(2);
+  document.getElementById('rc-sldist').textContent = slDist.toFixed(2) + ' pts';
+  const rr1El = document.getElementById('rc-rr1');
+  rr1El.textContent = '1:' + rr1.toFixed(2);
+  rr1El.className = 'calc-result-val ' + (rr1 >= 1.5 ? 'good' : rr1 >= 1 ? 'warn' : 'bad');
+  document.getElementById('rc-rr2').textContent = '1:' + rr2.toFixed(2);
+  document.getElementById('rc-p1').textContent = '$' + p1.toFixed(2);
+  document.getElementById('rc-p2').textContent = '$' + p2.toFixed(2);
+  document.getElementById('rc-sc').textContent = '$' + sc.toFixed(2);
+  document.getElementById('rc-p1n').textContent = '$' + (p1 - sc).toFixed(2);
+  const v = document.getElementById('rc-verdict');
+  if (rr1 >= 1.5) { v.className = 'calc-verdict good'; v.textContent = '✅ Good setup — R:R meets minimum. Take it if both TFs align.'; }
+  else if (rr1 >= 1) { v.className = 'calc-verdict warn'; v.textContent = '⚠️ Borderline R:R — move TP further or tighten SL.'; }
+  else { v.className = 'calc-verdict bad'; v.textContent = '❌ Skip this trade — R:R too low. You risk more than you make.'; }
+  const res = document.getElementById('rc-results');
+  res.className = 'calc-results open';
+}
+
+// ── LEVEL MODAL ──
+function openLevelModal() { document.getElementById('level-modal').classList.add('open'); }
+function closeLevelModal(e) {
+  if (!e || e.target === document.getElementById('level-modal')) document.getElementById('level-modal').classList.remove('open');
+}
+function saveLevelModal() {
+  const name = document.getElementById('ml-name').value.trim();
+  const price = parseFloat(document.getElementById('ml-price').value);
+  const type = document.getElementById('ml-type').value;
+  if (!name || !price) return;
+  state.levels.push({ name, price, type });
+  document.getElementById('ml-name').value = '';
+  document.getElementById('ml-price').value = '';
+  document.getElementById('level-modal').classList.remove('open');
+  updateLevelsDisplay(); saveState();
+}
+function deleteLevel(i) { state.levels.splice(i, 1); updateLevelsDisplay(); saveState(); }
+
+// ── NEWS MODAL ──
+function openNewsModal() { document.getElementById('news-modal').classList.add('open'); }
+function closeNewsModal(e) {
+  if (!e || e.target === document.getElementById('news-modal')) document.getElementById('news-modal').classList.remove('open');
+}
+function saveNewsModal() {
+  const name = document.getElementById('nm-name').value.trim();
+  const time = document.getElementById('nm-time').value.trim();
+  const impact = document.getElementById('nm-impact').value;
+  if (!name) return;
+  state.newsEvents.push({ name, time, impact, id: Date.now() });
+  document.getElementById('nm-name').value = '';
+  document.getElementById('nm-time').value = '';
+  document.getElementById('news-modal').classList.remove('open');
+  renderNews(); saveState();
+}
+function deleteNews(id) {
+  state.newsEvents = state.newsEvents.filter(e => e.id !== id);
+  renderNews(); saveState();
+}
+function renderNews() {
+  const container = document.getElementById('news-list');
+  if (!state.newsEvents.length) {
+    container.innerHTML = '<div style="padding:12px 8px;text-align:center;color:var(--text3);font-size:12px">No events added yet. Tap + Add every morning.</div>';
+    document.getElementById('news-overall-status').textContent = 'No events';
+    document.getElementById('news-overall-status').className = 'news-status clear';
+    return;
+  }
+  const hasHigh = state.newsEvents.some(e => e.impact === 'high');
+  const status = document.getElementById('news-overall-status');
+  if (hasHigh) { status.textContent = '⚠ RED NEWS'; status.className = 'news-status warning'; }
+  else { status.textContent = 'No red'; status.className = 'news-status clear'; }
+  container.innerHTML = state.newsEvents.map(e =>
+    `<div class="news-item">
+      <span class="news-impact ${e.impact}">${e.impact.toUpperCase()}</span>
+      <span class="news-name">${e.name}</span>
+      <span class="news-time">${e.time || '—'}</span>
+      <span class="news-del" onclick="deleteNews(${e.id})">✕</span>
+    </div>`
+  ).join('');
+}
+
+// ── JOURNAL ──
+function saveJournalEntry() {
+  const g = id => document.getElementById(id).value;
+  const entry = { date: g('jf-date'), session: g('jf-session'), dir: g('jf-dir'), outcome: g('jf-outcome'), entry: g('jf-entry'), exit: g('jf-exit'), setup: g('jf-setup'), lesson: g('jf-lesson'), id: Date.now() };
+  state.journal.unshift(entry);
+  renderJournal();
+  document.getElementById('jf-saved').style.display = 'block';
+  setTimeout(() => document.getElementById('jf-saved').style.display = 'none', 2500);
+  ['jf-entry', 'jf-exit', 'jf-setup', 'jf-lesson'].forEach(id => document.getElementById(id).value = '');
+  saveState();
+}
+function renderJournal() {
+  document.getElementById('j-count').textContent = '(' + state.journal.length + ')';
+  const container = document.getElementById('j-entries');
+  if (!state.journal.length) { container.innerHTML = '<div class="j-empty">📓 No entries yet.</div>'; return; }
+  container.innerHTML = state.journal.map(e => {
+    const isWin = e.outcome.startsWith('Win'), isLoss = e.outcome.startsWith('Loss');
+    const cls = isWin ? 'win' : isLoss ? 'loss' : 'be';
+    const pnl = e.entry && e.exit ? (parseFloat(e.exit) - parseFloat(e.entry)).toFixed(2) : null;
+    const pnlColor = pnl && parseFloat(pnl) > 0 ? 'var(--green)' : pnl && parseFloat(pnl) < 0 ? 'var(--red)' : 'var(--text3)';
+    return `<div class="j-entry">
+      <div class="j-entry-top">
+        <span class="j-entry-meta">${e.date} · ${e.session} · <strong>${e.dir}</strong></span>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${pnl ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${pnlColor}">${parseFloat(pnl)>0?'+':''}${pnl} pts</span>` : ''}
+          <span class="j-outcome ${cls}">${e.outcome}</span>
+        </div>
+      </div>
+      <div class="j-entry-notes">
+        ${e.setup ? `<div><strong>Setup:</strong> ${e.setup}</div>` : ''}
+        ${e.lesson ? `<div><strong>Lesson:</strong> ${e.lesson}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RESTORE BIAS BUTTONS ──
+function restoreBiasButtons() {
+  ['h1', 'm15'].forEach(tf => {
+    const val = state.bias[tf];
+    if (!val) return;
+    document.querySelectorAll(`.bias-btn[data-tf="${tf}"]`).forEach(b => {
+      if (b.dataset.val === val) {
+        if (val === 'Bullish') { b.style.background = 'var(--green-bg)'; b.style.borderColor = 'var(--green)'; }
+        else if (val === 'Bearish') { b.style.background = 'var(--red-bg)'; b.style.borderColor = 'var(--red)'; }
+        else { b.style.background = 'var(--amber-bg)'; b.style.borderColor = 'var(--amber)'; }
+      }
+    });
+  });
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('jf-date').value = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  syncSetupInputs();
+  renderChecklist('setup');
+  renderRules();
+  renderNews();
+  renderJournal();
+  restoreBiasButtons();
+  refreshAll();
+});
+</script>
+</body>
+</html>
