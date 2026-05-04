@@ -1,0 +1,42 @@
+name: Fetch XAU/USD Candles
+
+on:
+  workflow_dispatch:
+    inputs:
+      manual_override:
+        description: 'Skip trading window guard'
+        required: false
+        default: 'true'
+  schedule:
+    - cron: '*/5 12-17 * * 1-5'
+    - cron: '*/5 13-18 * * 1-5'
+
+jobs:
+  fetch-candles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Fetch candle data
+        env:
+          NINJA_KEY:       ${{ secrets.NINJA_KEY }}
+          GOLD_KEY:        ${{ secrets.GOLD_KEY }}
+          MANUAL_OVERRIDE: ${{ github.event.inputs.manual_override || 'false' }}
+        run: node .github/scripts/fetch-candles.js
+
+      - name: Commit updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/candles.json data/usage.json
+          git diff --staged --quiet || git commit -m "chore: update candles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push
