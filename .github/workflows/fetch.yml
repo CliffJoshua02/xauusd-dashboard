@@ -1,1 +1,56 @@
-{}
+# .github/workflows/fetch.yml
+# Fetches XAU/USD candle data from API Ninjas and caches it in data/candles.json
+# Only runs Mon–Fri during ET trading hours (8AM–1PM)
+# Respects 2,700 call/month budget with hard stop at 2,900
+
+name: Fetch XAU/USD Candles
+
+on:
+  schedule:
+    # GitHub Actions minimum granularity is 5 minutes.
+    # We run every 5 minutes — the script itself checks the clock
+    # and only fires the real API call every 150 seconds (2.5 min).
+    # Since cron can't do 2.5 min, we use 5 min and the script
+    # tracks timestamps to skip when called too soon.
+    - cron: '*/5 12-17 * * 1-5'
+    # 12-17 UTC = 8AM-1PM ET (EDT offset is UTC-4)
+    # 1-5 = Monday through Friday only
+    # GitHub cron uses UTC — ET is UTC-4 (EDT) or UTC-5 (EST)
+    # Using 12-17 UTC covers 8AM-1PM EDT (summer) safely.
+    # In winter (EST = UTC-5), add cron '*/5 13-18 * * 1-5' below.
+    - cron: '*/5 13-18 * * 1-5'
+    # Second entry covers EST (winter). The script's own time check
+    # prevents double-firing — only one window will be active at a time.
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  fetch-candles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit candles.json back to repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch candle data
+        env:
+          NINJA_KEY: ${{ secrets.NINJA_KEY }}
+          GOLD_KEY:  ${{ secrets.GOLD_KEY }}
+        run: node .github/scripts/fetch-candles.js
+
+      - name: Commit updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/candles.json data/usage.json
+          # Only commit if something actually changed
+          git diff --staged --quiet || git commit -m "chore: update candles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push
