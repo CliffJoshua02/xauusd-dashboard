@@ -1,20 +1,15 @@
 # .github/workflows/fetch.yml
+# Auto-schedule DISABLED — data is fetched via Force Pull button on the website.
+# The workflow_dispatch entry keeps the "Run workflow" button available on
+# GitHub's Actions tab as a backup manual trigger.
 
 name: Fetch XAU/USD Candles
 
 on:
-  schedule:
-    - cron: '*/5 12-17 * * 1-5'   # EDT (UTC-4): 8AM-1PM ET summer
-    - cron: '*/5 13-18 * * 1-5'   # EST (UTC-5): 8AM-1PM ET winter
-    # Script's own 150s interval guard prevents double-firing.
-
-  # Manual trigger from website or GitHub UI
-  # When triggered manually, MANUAL_OVERRIDE=true skips the
-  # trading window guard so you can test at any time.
   workflow_dispatch:
     inputs:
       manual_override:
-        description: 'Skip trading window guard (for testing)'
+        description: 'Skip trading window guard'
         required: false
         default: 'true'
 
@@ -37,7 +32,7 @@ jobs:
         env:
           NINJA_KEY:       ${{ secrets.NINJA_KEY }}
           GOLD_KEY:        ${{ secrets.GOLD_KEY }}
-          MANUAL_OVERRIDE: ${{ github.event.inputs.manual_override || 'false' }}
+          MANUAL_OVERRIDE: ${{ github.event.inputs.manual_override || 'true' }}
         run: node .github/scripts/fetch-candles.js
 
       - name: Commit updated data
