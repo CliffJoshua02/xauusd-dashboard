@@ -1,8 +1,8 @@
 {
   "meta": {
-    "fetchedAt": "2026-06-11T16:57:56.787Z",
-    "fetchedAtET": "6/11/2026, 8:57:56 AM ET",
-    "fetchedAtTs": 1781197076,
+    "fetchedAt": "2026-06-12T14:29:55.874Z",
+    "fetchedAtET": "6/12/2026, 6:29:55 AM ET",
+    "fetchedAtTs": 1781274595,
     "isManual": false,
     "ninja": {
       "usage": 0,
@@ -12,24 +12,24 @@
       "status": "OK"
     },
     "gold": {
-      "usage": 12,
+      "usage": 13,
       "limit": 90,
       "hardStop": 95,
-      "pct": "13.3%",
+      "pct": "14.4%",
       "status": "OK"
     }
   },
   "spot": {
-    "price": 4081.425,
-    "ask": 4081.88,
-    "bid": 4081.22,
-    "high": 4118.225,
-    "low": 4023.855,
-    "open": 4072.065,
-    "change": 9.36,
-    "changePct": 0.23,
-    "spread": 0.66,
-    "fetchedAtET": "6/11/2026, 8:57:56 AM ET",
+    "price": 4190.09,
+    "ask": 4190.62,
+    "bid": 4189.84,
+    "high": 4246.385,
+    "low": 4170.325,
+    "open": 4212.31,
+    "change": -22.22,
+    "changePct": -0.53,
+    "spread": 0.78,
+    "fetchedAtET": "6/12/2026, 6:29:55 AM ET",
     "derivedFromCandles": false
   },
   "candles1h": [],
@@ -42,7 +42,7 @@
     "m15Reason": "Not enough candles",
     "aligned": false,
     "direction": "Rng",
-    "detectedAt": "2026-06-11T16:57:56.787Z"
+    "detectedAt": "2026-06-12T14:29:55.874Z"
   },
   "news": []
 }
