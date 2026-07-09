@@ -5,11 +5,11 @@
     "lastTs": 0
   },
   "gold": {
-    "count": 13,
-    "lastTs": 1783524408
+    "count": 14,
+    "lastTs": 1783607179
   },
   "ff": {
-    "lastTs": 1783524408
+    "lastTs": 1783607179
   },
   "history": [
     {
@@ -144,6 +144,13 @@
       "goldUsed": 0,
       "ninjaTot": 0,
       "goldTot": 13
+    },
+    {
+      "ts": 1783607179,
+      "ninjaUsed": 0,
+      "goldUsed": 1,
+      "ninjaTot": 0,
+      "goldTot": 14
     }
   ]
 }
