@@ -172,6 +172,13 @@
       "goldUsed": 1,
       "ninjaTot": 0,
       "goldTot": 15
+    },
+    {
+      "ts": 1786371697,
+      "ninjaUsed": 0,
+      "goldUsed": 0,
+      "ninjaTot": 0,
+      "goldTot": 15
     }
   ]
 }

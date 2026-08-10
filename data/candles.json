@@ -1,8 +1,8 @@
 {
   "meta": {
-    "fetchedAt": "2026-08-10T14:03:22.961Z",
+    "fetchedAt": "2026-08-10T14:21:38.037Z",
     "fetchedAtET": "8/10/2026, 6:03:22 AM ET",
-    "fetchedAtTs": 1786370602,
+    "fetchedAtTs": 1786371697,
     "isManual": false,
     "ninja": {
       "usage": 0,
@@ -42,7 +42,7 @@
     "m15Reason": "Not enough candles",
     "aligned": false,
     "direction": "Rng",
-    "detectedAt": "2026-08-10T14:03:22.961Z"
+    "detectedAt": "2026-08-10T14:21:38.037Z"
   },
   "news": []
 }
