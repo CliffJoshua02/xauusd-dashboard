@@ -9,7 +9,7 @@
     "lastTs": 1787666069
   },
   "ff": {
-    "lastTs": 1787666069
+    "lastTs": 1787669968
   },
   "history": [
     {
@@ -1057,6 +1057,13 @@
     },
     {
       "ts": 1787669452,
+      "ninjaUsed": 0,
+      "goldUsed": 0,
+      "ninjaTot": 0,
+      "goldTot": 55
+    },
+    {
+      "ts": 1787669968,
       "ninjaUsed": 0,
       "goldUsed": 0,
       "ninjaTot": 0,
