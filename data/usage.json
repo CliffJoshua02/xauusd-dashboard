@@ -1,163 +1,23 @@
 {
-  "month": "2026-09",
+  "month": "2026-10",
   "ninja": {
     "count": 0,
     "lastTs": 0
   },
   "gold": {
-    "count": 21,
-    "lastTs": 1790352194
+    "count": 1,
+    "lastTs": 1790960233
   },
   "ff": {
-    "lastTs": 1790352194
+    "lastTs": 1790960233
   },
   "history": [
     {
-      "ts": 1788277249,
+      "ts": 1790960233,
       "ninjaUsed": 0,
       "goldUsed": 1,
       "ninjaTot": 0,
       "goldTot": 1
-    },
-    {
-      "ts": 1788362956,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 2
-    },
-    {
-      "ts": 1788448984,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 3
-    },
-    {
-      "ts": 1788454762,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 4
-    },
-    {
-      "ts": 1788535156,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 5
-    },
-    {
-      "ts": 1788540483,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 6
-    },
-    {
-      "ts": 1788799558,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 7
-    },
-    {
-      "ts": 1788881559,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 8
-    },
-    {
-      "ts": 1788967646,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 9
-    },
-    {
-      "ts": 1789053763,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 10
-    },
-    {
-      "ts": 1789059406,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 11
-    },
-    {
-      "ts": 1789140288,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 12
-    },
-    {
-      "ts": 1789145904,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 13
-    },
-    {
-      "ts": 1789487371,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 14
-    },
-    {
-      "ts": 1789573282,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 15
-    },
-    {
-      "ts": 1789660048,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 16
-    },
-    {
-      "ts": 1789744832,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 17
-    },
-    {
-      "ts": 1790092329,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 18
-    },
-    {
-      "ts": 1790178099,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 19
-    },
-    {
-      "ts": 1790265798,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 20
-    },
-    {
-      "ts": 1790352194,
-      "ninjaUsed": 0,
-      "goldUsed": 1,
-      "ninjaTot": 0,
-      "goldTot": 21
     }
   ]
 }
